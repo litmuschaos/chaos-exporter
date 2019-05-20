@@ -1,0 +1,47 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chaos-exporter
+  namespace: default 
+  labels:
+    app: chaos-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-exporter
+  template:
+    metadata:
+      labels:
+        app: chaos-exporter 
+    spec:
+      serviceAccountName: chaos-operator
+      containers:
+      - name: chaos-exporter
+        #image: ksatchit/sample-chaos-exporter:ci 
+        image: litmuschaos/chaos-exporter:ci 
+        imagePullPolicy: Always
+        env:
+          - name: CHAOSENGINE
+            value: engine-nginx
+
+          - name: APP_UUID
+            value: "3f2092f8-6400-11e9-905f-42010a800131" 
+ 
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chaos-exporter
+  namespace: default
+  labels:
+    app: chaos-exporter
+spec:
+  ports:
+  - port: 8080
+    name: metrics
+  selector:
+    app: chaos-exporter 
