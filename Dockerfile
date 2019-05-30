@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 
-COPY cmd/exporter/exporter /
+COPY ./exporter /
 
 EXPOSE 8080
 

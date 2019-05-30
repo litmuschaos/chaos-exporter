@@ -8,15 +8,20 @@ import (
     "k8s.io/client-go/rest"
 )
 
+//ExampleV1Alpha1Interface type defines chaosEngines & chaosResults 
 type ExampleV1Alpha1Interface interface {
+    // ChaosEngines with namespace attribute 
     ChaosEngines(namespace string) ChaosEngineInterface
+    // ChaosResults with namespace attribute
     ChaosResults(namespace string) ChaosResultInterface
 }
 
+//ExampleV1Alpha1Client type defines the rest client for chaos resources
 type ExampleV1Alpha1Client struct {
     restClient rest.Interface
 }
 
+//NewForConfig returns the kubeclient for the config provided
 func NewForConfig(c *rest.Config) (*ExampleV1Alpha1Client, error) {
     config := *c
     config.ContentConfig.GroupVersion = &schema.GroupVersion{Group: v1alpha1.GroupName, Version: v1alpha1.GroupVersion}
