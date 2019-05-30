@@ -5,6 +5,7 @@ import (
     "strings"
     "k8s.io/client-go/kubernetes/scheme"
     "k8s.io/client-go/rest"
+    // auth for gcp: optional
     _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
     v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
@@ -35,7 +36,7 @@ var err error
 func statusConv (expstatus string)(numeric float64){
     if numeric, ok := numericstatus[expstatus]; ok {
         return numeric
-        fmt.Printf("%v", numeric)
+        //fmt.Printf("%v", numeric)
     }
     //return 127
     return 0
@@ -47,6 +48,7 @@ func statusConv (expstatus string)(numeric float64){
    - TODO: Update the chaosresult to carry verdict alone. Status & Verdict are redundant
 */ 
 
+// GetChaosMetrics returns chaos metrics for a given chaosengine 
 func GetChaosMetrics(cfg *rest.Config, cEngine string)(totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error){
 
     v1alpha1.AddToScheme(scheme.Scheme)
