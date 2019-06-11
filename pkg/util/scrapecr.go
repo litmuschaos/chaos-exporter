@@ -44,12 +44,11 @@ func statusConv (expstatus string)(numeric float64){
 
 /* Exported function to gather chaos metrics
 
-   - TODO: Obtain/derive namespace of resources. Hardcoded to "default"
    - TODO: Update the chaosresult to carry verdict alone. Status & Verdict are redundant
 */ 
 
 // GetChaosMetrics returns chaos metrics for a given chaosengine 
-func GetChaosMetrics(cfg *rest.Config, cEngine string)(totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error){
+func GetChaosMetrics(cfg *rest.Config, cEngine string, ns string)(totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error){
 
     v1alpha1.AddToScheme(scheme.Scheme)
     clientSet, err := clientV1alpha1.NewForConfig(cfg)
@@ -57,7 +56,7 @@ func GetChaosMetrics(cfg *rest.Config, cEngine string)(totalExpCount, totalPasse
         return 0, 0, 0, nil, err
     }
 
-    engine, err := clientSet.ChaosEngines("default").Get(cEngine, metav1.GetOptions{})
+    engine, err := clientSet.ChaosEngines(ns).Get(cEngine, metav1.GetOptions{})
     if err != nil {
         return 0, 0, 0, nil, err
     }
@@ -79,16 +78,18 @@ func GetChaosMetrics(cfg *rest.Config, cEngine string)(totalExpCount, totalPasse
 
     for _, test:= range chaosexperimentlist{
         chaosresultname := fmt.Sprintf("%s-%s", cEngine, test)
-        testresultdump, err:= clientSet.ChaosResults("default").Get(chaosresultname, metav1.GetOptions{})
+        testresultdump, err:= clientSet.ChaosResults(ns).Get(chaosresultname, metav1.GetOptions{})
         if err != nil {
             if strings.Contains(err.Error(), "not found"){
                 // lack of result cr indicates experiment not executed
-                chaosresultmap[chaosresultname] = "not-executed"
+                //chaosresultmap[chaosresultname] = "not-executed"
+                chaosresultmap[test] = "not-executed"
             }
             //return 0, 0, 0, nil, err
         }
         result := testresultdump.Spec.ExperimentStatus.Verdict
-        chaosresultmap[chaosresultname] = result
+        //chaosresultmap[chaosresultname] = result
+        chaosresultmap[test] = result
     }
 
     pcount, fcount := 0, 0
