@@ -49,7 +49,7 @@ var (
         Name:      "experiment_count",
         Help:      "Total number of experiments executed by the chaos engine",
     },
-    []string{"app_uid"},
+    []string{"app_uid", "engine_name"},
     )
 
     passedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -58,7 +58,7 @@ var (
         Name:      "passed_experiments",
         Help:      "Total number of passed experiments",
     },
-    []string{"app_uid"},
+    []string{"app_uid", "engine_name"},
     )
 
     failedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -67,7 +67,7 @@ var (
         Name:      "failed_experiments",
         Help:      "Total number of failed experiments",
     },
-    []string{"app_uid"},
+    []string{"app_uid", "engine_name"},
     )
 
 )
@@ -81,12 +81,18 @@ func contains(l []string, e string) bool {
      return false
 }
 
+func getEnv(key, fallback string)(string){
+        if value, ok := os.LookupEnv(key); ok {
+            return value
+        }
+        return fallback
+}
 
-func metrics(cfg *rest.Config, cEngine string, aUUID string){
+func metrics(cfg *rest.Config, cEngine string, aUUID string, aNS string){
 
    for {
             // Get the chaos metrics for the specified chaosengine 
-            expTotal, passTotal, failTotal, expMap, err := util.GetChaosMetrics(cfg, cEngine)
+            expTotal, passTotal, failTotal, expMap, err := util.GetChaosMetrics(cfg, cEngine, aNS)
             if err != nil {
                 //panic(err.Error())
                 log.Fatal("Unable to get metrics: ", err.Error())
@@ -102,23 +108,23 @@ func metrics(cfg *rest.Config, cEngine string, aUUID string){
                         Name:      sanitizedExpName,
                         Help: "",
                     },
-                    []string{"app_uid"},
+                    []string{"app_uid", "engine_name"},
                     )
                 )
 
                 if contains(registeredResultMetrics, sanitizedExpName) {
                    prometheus.Unregister(tmpExp); prometheus.MustRegister(tmpExp)
-                   tmpExp.WithLabelValues(aUUID).Set(verdict)
+                   tmpExp.WithLabelValues(aUUID, cEngine).Set(verdict)
                 } else {
                    prometheus.MustRegister(tmpExp)
-                   tmpExp.WithLabelValues(aUUID).Set(verdict)
+                   tmpExp.WithLabelValues(aUUID, cEngine).Set(verdict)
                    registeredResultMetrics = append(registeredResultMetrics, sanitizedExpName)
                 }
 
                 // Set the fixed chaos metrics
-                experimentsTotal.WithLabelValues(aUUID).Set(expTotal)
-                passedExperiments.WithLabelValues(aUUID).Set(passTotal)
-                failedExperiments.WithLabelValues(aUUID).Set(failTotal)
+                experimentsTotal.WithLabelValues(aUUID, cEngine).Set(expTotal)
+                passedExperiments.WithLabelValues(aUUID, cEngine).Set(passTotal)
+                failedExperiments.WithLabelValues(aUUID, cEngine).Set(failTotal)
             }
 
             time.Sleep(1000 * time.Millisecond)
@@ -128,8 +134,11 @@ func metrics(cfg *rest.Config, cEngine string, aUUID string){
 func main(){
 
     // Get app details & chaoengine name from ENV 
+    // Add checks for default
     appUUID := os.Getenv("APP_UUID")
     chaosengine := os.Getenv("CHAOSENGINE")
+    //appNS := os.Getenv("APP_NAMESPACE")
+    appNS := getEnv("APP_NAMESPACE", "default")
 
     flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
     flag.Parse()
@@ -158,7 +167,7 @@ func main(){
     prometheus.MustRegister(passedExperiments)
     prometheus.MustRegister(failedExperiments)
 
-    go metrics(config, chaosengine, appUUID)
+    go metrics(config, chaosengine, appUUID, appNS)
 
     //This section will start the HTTP server and expose
     //any metrics on the /metrics endpoint.
