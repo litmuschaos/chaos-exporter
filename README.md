@@ -29,7 +29,6 @@
 
 ### Local Machine 
 
-//- Set the application deployment (assuming a live K8s cluster w/ app) UUID as ENV (APP_UUID)
 - Fork this repo!
 - Edit the GOPATH variable and help it point to your workspace.
 - Clone the repository where you set the workspace.
