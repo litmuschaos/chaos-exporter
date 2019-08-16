@@ -29,18 +29,30 @@
 
 ### Local Machine 
 
-- Set the application deployment (assuming a live K8s cluster w/ app) UUID as ENV (APP_UUID)
-
-- Set the ChaosEngine CR name as ENV (CHAOSENGINE) 
-  - For CR spec, see: https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine.yaml
-
-- If the experiments are not executed, apply the ChaosResult CRs manually 
-  - For CR spec, see: https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosresult.yaml
-
-- Run the exporter container (litmuschaos/chaos-exporter:ci) on host network. It is necessary to mount the kubeconfig
-  & override entrypoint w/ `./exporter -kubeconfig <path>`
-
-- Execute `curl 127.0.0.1:8080/metrics` to view metrics
+//- Set the application deployment (assuming a live K8s cluster w/ app) UUID as ENV (APP_UUID)
+- Fork this repo!
+- Edit the GOPATH variable and help it point to your workspace.
+- Clone the repository where you set the workspace.
+- Use the `git clobe repo-name` ,or just copy the git clone URL avaliable on the right side.
+- Set an APP_UUID in the `~/.bashrc` or the `~/.profile`, add this command to set a default
+- Now, start your Local Cluster, (this guide helps in `minikube` but can be used for other offline clusters as well)
+- Create Kubernetes CR's(Custom Resources) for the litmus operator, link down below:
+  - For ChaosEngine : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine_crd.yaml
+  - For ChaosResult : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosresults_crd.yaml
+  - For ChaosExperiment: https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosexperiment_crd.yaml
+- Now, as you have created the CustomResourceDefinition, Now it time to create the CustomResources for these definition above:
+  - For Default ChaosEngine : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine.yaml
+    NOTE THAT THIS CHAOSENGINE COMES WITH A DEFAULT NAME ASSIGNED WITH IT WHICH IS : `engine-nginx`  you would need this afterwards
+  - For Default ChaosResult : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosresult.yaml
+  - For the Default Experiments (Pod Delete Experiment) : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosexperiment.yaml
+- As you have created the ChaosEngine, now again make changes in the `~/.bashrc` or the `~/.profile`, and the add this statement `export CHAOSENGINE=engine-nginx`, if you have changed the ChaosEngine name, then make those changes here as well.
+- Execute the command `source ~/.bashrc` or `source ~/.profile` according to the file you made changes in
+- Now try the command `echo $APP_UUID` and `echo $CHAOSENGINE` , and check the outputs annd verify if they are set according to your preference.
+- Go into your cloned library, and change directory to this path : `your_workspace/src/github.com/litmuschaos/chaos-exporter/cmd/exporter`, and build the main.go, by executing the `go build main.go`
+- Find your kube-config file for your local cluster.
+  - For minikube it is located in the directory `/home/user_name/.kube/config`, keep this path handy with you
+- After building the file execute this command `sudo ./main -kubeconfig=path_for_the_kuneconfig`
+- Execute `curl 127.0.0.1:8080/metrics | less` to view metrics
 
 ### On Kubernetes Cluster
 
