@@ -41,7 +41,7 @@
 
 ### Further Steps: 
 
-- The following steps are required to create sample chaos-related custom resources in order to visualize the metrics gathered by the chaos exporter
+The following steps are required to create sample chaos-related custom resources in order to visualize the metrics gathered by the chaos exporter
 
 - Clone this repo into your $GOPATH/litmuschaos"
   `git clone https://github.com/litmuschaos/chaos-exporter`
