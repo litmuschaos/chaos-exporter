@@ -27,6 +27,12 @@ before_install:
   - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
   # ginkgo and gomega dependencies
   - go get github.com/onsi/ginkgo/ginkgo & go get github.com/onsi/gomega
+  # go package
+  - go get github.com/litmuschaos/chaos-exporter/pkg/util
+  # k8s custom resource defination and custom resource
+  - kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
+  - kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine.yaml
+
 script:
   - make godeps
   - make test

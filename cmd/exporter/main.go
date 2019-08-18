@@ -137,10 +137,13 @@ func main() {
 
 	// Get app details & chaoengine name from ENV
 	// Add checks for default
-	appUUID := os.Getenv("APP_UUID")
-	chaosengine := os.Getenv("CHAOSENGINE")
+	// appUUID := os.Getenv("APP_UUID")
+	appUUID := "1234"
+
+	chaosengine := "engine-nginx"
+	// chaosengine := os.Getenv("CHAOSENGINE")
 	//appNS := os.Getenv("APP_NAMESPACE")
-	appNS := getEnv("APP_NAMESPACE", "default")
+	appNS := getEnv("APP_NAMESPACE", "litmus")
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
 	flag.Parse()
