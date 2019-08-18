@@ -29,11 +29,16 @@ before_install:
   - go get github.com/onsi/ginkgo/ginkgo & go get github.com/onsi/gomega
   # go package
   - go get github.com/litmuschaos/chaos-exporter/pkg/util
-  # k8s custom resource defination and custom resource
+  # k8s install custom resource defination and chaosengine custom resource
   - kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
+  # create namespace litmus
+  - kubectl create ns litmus 
   - kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine.yaml
 
 script:
   - make godeps
   - make test
+
+# after_success:
+#   - make dockerops
 
