@@ -25,18 +25,21 @@ before_install:
   - "sudo chown -R travis: /home/travis/.minikube/"
   # Wait for Kubernetes to be up and ready.
   - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
-  # ginkgo and gomega dependencies
+  # bdd testing dependencies - ginkgo and gomega 
   - go get github.com/onsi/ginkgo/ginkgo & go get github.com/onsi/gomega
   # go package
   - go get github.com/litmuschaos/chaos-exporter/pkg/util
-  # k8s install custom resource defination and chaosengine custom resource
+  # k8s install custom resource defination
   - kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
   # create namespace litmus
   - kubectl create ns litmus 
+  # Creating custom resource chaosengine w/ namespace litmus
   - kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine.yaml
 
 script:
+  # installing go dependencies
   - make godeps
+  # Running all go tests
   - make test
 
 # after_success:

@@ -33,6 +33,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 			println(string(stdout))
 
 			Expect(string(stdout)).To(MatchRegexp("engine-nginx"))
+
 		})
 	})
 })
