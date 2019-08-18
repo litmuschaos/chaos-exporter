@@ -137,10 +137,8 @@ func main() {
 
 	// Get app details & chaoengine name from ENV
 	// Add checks for default
-	// appUUID := os.Getenv("APP_UUID")
-	appUUID := "1234"
-	// chaosengine := os.Getenv("CHAOSENGINE")
-	chaosengine := "engine-nginx"
+	appUUID := os.Getenv("APP_UUID")
+	chaosengine := os.Getenv("CHAOSENGINE")
 	//appNS := os.Getenv("APP_NAMESPACE")
 	appNS := getEnv("APP_NAMESPACE", "default")
 
