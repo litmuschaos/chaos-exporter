@@ -76,7 +76,7 @@ dockerops:
 	# Dockerfile available in the repo root
 	sudo docker build . -f Dockerfile -t litmuschaos/chaos-exporter:ci  
 	REPONAME="litmuschaos" IMGNAME="chaos-exporter" IMGTAG="ci" ./buildscripts/push
-	
+
 .PHONY: bdddeps
 bdddeps:
 	@echo ""
@@ -90,3 +90,4 @@ bdddeps:
 	@go get -u -v k8s.io/client-go/kubernetes/scheme
 	@go get -u -v k8s.io/client-go/rest
 	@go get -u -v k8s.io/client-go/tools/clientcmd
+	@exit 1;
