@@ -21,6 +21,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -137,14 +138,12 @@ func main() {
 
 	// Get app details & chaoengine name from ENV
 	// Add checks for default
+
 	appUUID := os.Getenv("APP_UUID")
-	// appUUID := "1234"
-
-	// chaosengine := "engine-nginx"
 	chaosengine := os.Getenv("CHAOSENGINE")
-	//appNS := os.Getenv("APP_NAMESPACE")
-	appNS := getEnv("APP_NAMESPACE", "litmus")
+	appNS := os.Getenv("APP_NAMESPACE")
 
+	fmt.Println(appUUID)
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
 	flag.Parse()
 

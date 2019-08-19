@@ -29,12 +29,6 @@ before_install:
   - go get github.com/onsi/ginkgo/ginkgo & go get github.com/onsi/gomega
   # go package
   - go get github.com/litmuschaos/chaos-exporter/pkg/util
-  # k8s install custom resource defination
-  - kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
-  # create namespace litmus
-  - kubectl create ns litmus 
-  # Creating custom resource chaosengine w/ namespace litmus
-  - kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine.yaml
 
 script:
   # installing go dependencies
@@ -42,6 +36,7 @@ script:
   # Running all go tests
   - make test
 
-# after_success:
-#   - make dockerops
+after_success:
+  - sudo minikube delete
+  # - make dockerops
 
