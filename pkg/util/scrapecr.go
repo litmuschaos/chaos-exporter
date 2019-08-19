@@ -2,9 +2,11 @@ package util
 
 import (
 	"fmt"
+	"strings"
+
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"strings"
+
 	// auth for gcp: optional
 	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"

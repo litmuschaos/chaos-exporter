@@ -1,14 +1,22 @@
-package bdd_test
+package main
 
 import (
-	"os/exec"
+	"flag"
+	"fmt"
+	"os"
 	"testing"
 
+	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestChaos(t *testing.T) {
+
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "BDD test")
 }
@@ -17,22 +25,24 @@ var _ = Describe("BDD on chaos-exporter", func() {
 	Context("Chaos Engine Liveliness test", func() {
 
 		It("should be a chaosEngine", func() {
-			app := "kubectl"
-			arg1 := "get"
-			arg2 := "chaosengine"
-			arg3 := "-n"
-			arg4 := "litmus"
-			cmd := exec.Command(app, arg1, arg2, arg3, arg4)
-			stdout, err := cmd.Output()
 
+			kubeconfig := flag.String("kubeconfig", os.Getenv("HOME")+"/.kube/config", "kubeconfig file")
+			flag.Parse()
+			config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 			if err != nil {
-				println(err.Error())
-				return
+				fmt.Println("KubeConfig Path is wrong", err)
+				os.Exit(1)
 			}
 
-			println(string(stdout))
+			v1alpha1.AddToScheme(scheme.Scheme)
+			clientSet, err := clientV1alpha1.NewForConfig(config)
+			if err != nil {
+				fmt.Println(err)
+			}
+			engine, err := clientSet.ChaosEngines("litmus").List(metav1.ListOptions{})
+			fmt.Println(engine.Items[0].Name)
 
-			Expect(string(stdout)).To(MatchRegexp("engine-nginx"))
+			Expect(engine.Items[0].Name).To(Equal("engine-nginx"))
 
 		})
 	})

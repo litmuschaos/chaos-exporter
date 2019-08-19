@@ -14,7 +14,7 @@
 
      - pod_failure
      - container_kill
-     - container_network_delay
+     - container_network_delayexperimentsTotal
      - container_packet_loss
 */
 
