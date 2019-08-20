@@ -79,7 +79,7 @@ dockerops:
 
 .PHONY: bdddeps
 bdddeps:
-	@echo ""
+	# @echo ""
 	@echo "INFO:\tverifying dependencies for bdddeps ..."
 	@go get -u -v github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1
 	@go get -u -v github.com/litmuschaos/chaos-exporter/pkg/util
@@ -87,7 +87,5 @@ bdddeps:
 	@go get -u -v github.com/onsi/ginkgo
 	@go get -u -v github.com/onsi/gomega
 	@go get -u -v k8s.io/apimachinery/pkg/apis/meta/v1
-	@go get -u -v k8s.io/client-go/kubernetes/scheme
-	@go get -u -v k8s.io/client-go/rest
-	@go get -u -v k8s.io/client-go/tools/clientcmd
+	@go get -u -v k8s.io/client-go/
 	@exit 1;
