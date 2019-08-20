@@ -81,6 +81,7 @@ dockerops:
 bdddeps:
 	@echo "bdd test dependencies"
 	@echo "INFO:\tverifying dependencies for bdddeps ..."
+	@go get -u -v github.com/litmuschaos/chaos-exporter/pkg/util
 	@go get -u -v github.com/litmuschaos/chaos-operator/pkg/apis
 	@go get -u -v github.com/onsi/ginkgo
 	@go get -u -v github.com/onsi/gomega 
