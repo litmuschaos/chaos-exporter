@@ -10,9 +10,9 @@ import (
 
 	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
 	"github.com/litmuschaos/chaos-exporter/pkg/util"
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"k8s.io/api/node/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
