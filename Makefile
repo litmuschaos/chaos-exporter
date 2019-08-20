@@ -79,13 +79,10 @@ dockerops:
 
 .PHONY: bdddeps
 bdddeps:
-	# @echo ""
+	@echo "bdd test dependencies"
 	@echo "INFO:\tverifying dependencies for bdddeps ..."
 	@go get -u -v github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1
 	@go get -u -v github.com/litmuschaos/chaos-exporter/pkg/util
 	@go get -u -v github.com/litmuschaos/chaos-operator/pkg/apis
 	@go get -u -v github.com/onsi/ginkgo
 	@go get -u -v github.com/onsi/gomega
-	@go get -u -v k8s.io/apimachinery/pkg/apis/meta/v1
-	@go get -u -v k8s.io/client-go/
-	@exit 1;
