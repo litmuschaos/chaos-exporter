@@ -48,6 +48,12 @@ The following steps are required to create sample chaos-related custom resources
 - Set an APP_UUID in the `~/.bashrc` or the `~/.profile`, add this command to set a default
 - Now, start your Local Cluster, (this guide helps in `minikube` but can be used for other offline clusters as well)
 - Create Kubernetes CR's(Custom Resources) for the litmus operator, link down below:
+- Set an APP_UUID in the `~/.bashrc` or the `~/.profile`, add this command to set a default
+- Now, start your Local Cluster, (this guide helps in `minikube` but can be used for other offline clusters as well)
+- Create Kubernetes CR's(Custom Resources) for the litmus operator, link down below:
+  - For ChaosEngine : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine_crd.yaml
+  - For ChaosResult : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosresults_crd.yaml
+  - For ChaosExperiment: https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosexperiment_crd.yaml
 - Now, as you have created the CustomResourceDefinition, Now it time to create the CustomResources for these definition above:
   - For Default ChaosEngine : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine.yaml
     NOTE THAT THIS CHAOSENGINE COMES WITH A DEFAULT NAME ASSIGNED WITH IT WHICH IS : `engine-nginx`  you would need this afterwards
@@ -55,7 +61,7 @@ The following steps are required to create sample chaos-related custom resources
   - For the Default Experiments (Pod Delete Experiment) : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosexperiment.yaml
 - As you have created the ChaosEngine, now again make changes in the `~/.bashrc` or the `~/.profile`, and the add this statement `export CHAOSENGINE=engine-nginx`, if you have changed the ChaosEngine name, then make those changes here as well.
 - Execute the command `source ~/.bashrc` or `source ~/.profile` according to the file you made changes in
-- Now try the command `echo $APP_UUID` and `echo $CHAOSENGINE` , and check the outputs annd verify if they are set according to your preference.
+- Set an APP_UUID for the chaos-operator, and add it into environment variables.
   - APP_UUID is derived from the app to be added as a metric label for Prometheus Exporter, as same for the ChaosEngine.
 - Run the command `make build` in the root directory.
 - Find your kube-config file for your local cluster.
