@@ -59,7 +59,7 @@ build:
 	@echo "------------------"
 	@echo "--> Build Chaos Exporter"
 	@echo "------------------"
-	@go build ./cmd/exporter
+	@go build ./cmd/exporter 
 
 .PHONY: test
 test:
