@@ -57,10 +57,10 @@ The following steps are required to create sample chaos-related custom resources
 - Execute the command `source ~/.bashrc` or `source ~/.profile` according to the file you made changes in
 - Now try the command `echo $APP_UUID` and `echo $CHAOSENGINE` , and check the outputs annd verify if they are set according to your preference.
   - APP_UUID is derived from the app to be added as a metric label for Prometheus Exporter, as same for the ChaosEngine.
-- Go into your cloned library, and change directory to this path : `your_workspace/src/github.com/litmuschaos/chaos-exporter/cmd/exporter`, and build the main.go, by executing the `go build main.go`
+- Run the command `make build` in the root directory.
 - Find your kube-config file for your local cluster.
   - For minikube it is located in the directory `/home/user_name/.kube/config`, keep this path handy with you
-- After building the file execute this command `sudo ./main -kubeconfig=path_for_the_kuneconfig`
+- After building the file execute this command `sudo ./main -kubeconfig=path_for_the_kubeconfig`
 - Execute `curl 127.0.0.1:8080/metrics | less` to view metrics
 
 ### On Kubernetes Cluster
