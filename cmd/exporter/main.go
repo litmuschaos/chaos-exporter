@@ -168,6 +168,7 @@ func main() {
 	kubeVersion, err := util.GetVersionInfo(config)
 	if err != nil {
 		log.Info("Unable to get Kubernetes Version")
+		kubeVersion := "N/A"
 	}
 
 	// Register the fixed (count) chaos metrics
