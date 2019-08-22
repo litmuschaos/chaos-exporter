@@ -40,7 +40,7 @@
 - `$GOPATH` set to your working directory.
 - Set an `APP_UUID` parameter with a valid string in the environment variables,as `APP_UUID` is derived from the app to be added as a metric label for Prometheus Exporter, as same for the ChaosEngine.
 
-### Further Steps: 
+#### Further Steps: 
 
 The following steps are required to create sample chaos-related custom resources in order to visualize the metrics gathered by the chaos exporter.
 
