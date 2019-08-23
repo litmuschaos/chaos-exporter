@@ -1,7 +1,6 @@
 package util
 
 import (
-	"fmt"
 	log "github.com/Sirupsen/logrus"
 	discovery "k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
