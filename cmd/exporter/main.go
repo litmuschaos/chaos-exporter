@@ -1,17 +1,17 @@
 /* The chaos exporter collects and exposes the following type of metrics:
 
    Fixed (always captured):
-     - Total number of chaos experiments 
-     - Total number of passed experiments 
+     - Total number of chaos experiments
+     - Total number of passed experiments
      - Total Number of failed experiments
- 
+
    Dynamic (experiment list may vary based on c.engine):
      - States of individual chaos experiments
      - {not-executed:0, running:1, fail:2, pass:3}
        TODO: Improve representaion of test state
 
    Common experiments include:
- 
+
      - pod_failure
      - container_kill
      - container_network_delay
@@ -21,18 +21,20 @@
 package main
 
 import (
-  "os"
-  "time"
-  //"fmt"
-  "flag"
-  "net/http"
-  "strings"
-  "github.com/litmuschaos/chaos-exporter/pkg/util"
-  log "github.com/Sirupsen/logrus"
-  "github.com/prometheus/client_golang/prometheus"
-  "github.com/prometheus/client_golang/prometheus/promhttp"
-  "k8s.io/client-go/tools/clientcmd"
-  "k8s.io/client-go/rest"
+	"os"
+	"time"
+
+	//"fmt"
+	"flag"
+	"net/http"
+	"strings"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/litmuschaos/chaos-exporter/pkg/util"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 // Declare general variables (cluster ops, error handling, misc)
@@ -43,135 +45,141 @@ var registeredResultMetrics []string
 
 // Declare the fixed chaos metrics. Dynamic (testStatus) metrics are defined in metrics()
 var (
-    experimentsTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Namespace: "c",
-        Subsystem: "engine",
-        Name:      "experiment_count",
-        Help:      "Total number of experiments executed by the chaos engine",
-    },
-    []string{"app_uid", "engine_name"},
-    )
+	experimentsTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "c",
+		Subsystem: "engine",
+		Name:      "experiment_count",
+		Help:      "Total number of experiments executed by the chaos engine",
+	},
+		[]string{"app_uid", "engine_name", "kube_version"},
+	)
 
-    passedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Namespace: "c",
-        Subsystem: "engine",
-        Name:      "passed_experiments",
-        Help:      "Total number of passed experiments",
-    },
-    []string{"app_uid", "engine_name"},
-    )
+	passedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "c",
+		Subsystem: "engine",
+		Name:      "passed_experiments",
+		Help:      "Total number of passed experiments",
+	},
+		[]string{"app_uid", "engine_name", "kube_version"},
+	)
 
-    failedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-        Namespace: "c",
-        Subsystem: "engine",
-        Name:      "failed_experiments",
-        Help:      "Total number of failed experiments",
-    },
-    []string{"app_uid", "engine_name"},
-    )
-
+	failedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "c",
+		Subsystem: "engine",
+		Name:      "failed_experiments",
+		Help:      "Total number of failed experiments",
+	},
+		[]string{"app_uid", "engine_name", "kube_version"},
+	)
 )
 
 func contains(l []string, e string) bool {
-     for _, i := range l {
-         if i == e {
-             return true
-         }
-     }
-     return false
+	for _, i := range l {
+		if i == e {
+			return true
+		}
+	}
+	return false
 }
 
-func getEnv(key, fallback string)(string){
-        if value, ok := os.LookupEnv(key); ok {
-            return value
-        }
-        return fallback
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
 }
 
-func metrics(cfg *rest.Config, cEngine string, aUUID string, aNS string){
+func metrics(cfg *rest.Config, cEngine string, aUUID string, aNS string, kVer string) {
 
-   for {
-            // Get the chaos metrics for the specified chaosengine 
-            expTotal, passTotal, failTotal, expMap, err := util.GetChaosMetrics(cfg, cEngine, aNS)
-            if err != nil {
-                //panic(err.Error())
-                log.Fatal("Unable to get metrics: ", err.Error())
-            }
+	for {
+		// Get the chaos metrics for the specified chaosengine
+		expTotal, passTotal, failTotal, expMap, err := util.GetChaosMetrics(cfg, cEngine, aNS)
+		if err != nil {
+			//panic(err.Error())
+			log.Fatal("Unable to get metrics: ", err.Error())
+		}
 
-            // Define, register & set the dynamically obtained chaos metrics (experiment state)
-            for index, verdict := range expMap{
-                sanitizedExpName := strings.Replace(index, "-", "_", -1)
-                var (
-                    tmpExp = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-                        Namespace: "c",
-                        Subsystem: "exp",
-                        Name:      sanitizedExpName,
-                        Help: "",
-                    },
-                    []string{"app_uid", "engine_name"},
-                    )
-                )
+		// Define, register & set the dynamically obtained chaos metrics (experiment state)
+		for index, verdict := range expMap {
+			sanitizedExpName := strings.Replace(index, "-", "_", -1)
+			var (
+				tmpExp = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+					Namespace: "c",
+					Subsystem: "exp",
+					Name:      sanitizedExpName,
+					Help:      "",
+				},
+					[]string{"app_uid", "engine_name", "kube_version"},
+				)
+			)
 
-                if contains(registeredResultMetrics, sanitizedExpName) {
-                   prometheus.Unregister(tmpExp); prometheus.MustRegister(tmpExp)
-                   tmpExp.WithLabelValues(aUUID, cEngine).Set(verdict)
-                } else {
-                   prometheus.MustRegister(tmpExp)
-                   tmpExp.WithLabelValues(aUUID, cEngine).Set(verdict)
-                   registeredResultMetrics = append(registeredResultMetrics, sanitizedExpName)
-                }
+			if contains(registeredResultMetrics, sanitizedExpName) {
+				prometheus.Unregister(tmpExp)
+				prometheus.MustRegister(tmpExp)
+				tmpExp.WithLabelValues(aUUID, cEngine, kVer).Set(verdict)
+			} else {
+				prometheus.MustRegister(tmpExp)
+				tmpExp.WithLabelValues(aUUID, cEngine, kVer).Set(verdict)
+				registeredResultMetrics = append(registeredResultMetrics, sanitizedExpName)
+			}
 
-                // Set the fixed chaos metrics
-                experimentsTotal.WithLabelValues(aUUID, cEngine).Set(expTotal)
-                passedExperiments.WithLabelValues(aUUID, cEngine).Set(passTotal)
-                failedExperiments.WithLabelValues(aUUID, cEngine).Set(failTotal)
-            }
+			// Set the fixed chaos metrics
+			experimentsTotal.WithLabelValues(aUUID, cEngine, kVer).Set(expTotal)
+			passedExperiments.WithLabelValues(aUUID, cEngine, kVer).Set(passTotal)
+			failedExperiments.WithLabelValues(aUUID, cEngine, kVer).Set(failTotal)
+		}
 
-            time.Sleep(1000 * time.Millisecond)
-   }
+		time.Sleep(1000 * time.Millisecond)
+	}
 }
 
-func main(){
+func main() {
 
-    // Get app details & chaoengine name from ENV 
-    // Add checks for default
-    appUUID := os.Getenv("APP_UUID")
-    chaosengine := os.Getenv("CHAOSENGINE")
-    //appNS := os.Getenv("APP_NAMESPACE")
-    appNS := getEnv("APP_NAMESPACE", "default")
+	// Get app details & chaoengine name from ENV
+	// Add checks for default
+	appUUID := os.Getenv("APP_UUID")
+	chaosengine := os.Getenv("CHAOSENGINE")
+	//appNS := os.Getenv("APP_NAMESPACE")
+	appNS := getEnv("APP_NAMESPACE", "default")
 
-    flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
-    flag.Parse()
+	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
+	flag.Parse()
 
-    // Use in-cluster config if kubeconfig file not available
-    if kubeconfig == "" {
-        log.Info("using the in-cluster config")
-        config, err = rest.InClusterConfig()
-    } else {
-        log.Info("using configuration from: ", kubeconfig)
-        config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-    }
+	// Use in-cluster config if kubeconfig file not available
+	if kubeconfig == "" {
+		log.Info("using the in-cluster config")
+		config, err = rest.InClusterConfig()
+	} else {
+		log.Info("using configuration from: ", kubeconfig)
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	}
 
-    if err != nil {
-        panic(err.Error())
-    }
+	if err != nil {
+		panic(err.Error())
+	}
 
-    // Validate availability of mandatory ENV
-    if chaosengine == "" || appUUID == "" {
-        log.Fatal("ERROR: please specify correct APP_UUID & CHAOSENGINE ENVs")
-        os.Exit(1)
-    }
+	// Validate availability of mandatory ENV
+	if chaosengine == "" || appUUID == "" {
+		log.Fatal("ERROR: please specify correct APP_UUID & CHAOSENGINE ENVs")
+		os.Exit(1)
+	}
 
-    // Register the fixed (count) chaos metrics
-    prometheus.MustRegister(experimentsTotal)
-    prometheus.MustRegister(passedExperiments)
-    prometheus.MustRegister(failedExperiments)
+	kubeVersion, err := util.GetVersionInfo(config)
+	if err != nil {
+		log.Info("Unable to get Kubernetes Version")
+		kubeVersion = "N/A"
+	}
 
-    go metrics(config, chaosengine, appUUID, appNS)
+	// Register the fixed (count) chaos metrics
+	prometheus.MustRegister(experimentsTotal)
+	prometheus.MustRegister(passedExperiments)
+	prometheus.MustRegister(failedExperiments)
 
-    //This section will start the HTTP server and expose
-    //any metrics on the /metrics endpoint.
-    http.Handle("/metrics", promhttp.Handler())
-    log.Info("Beginning to serve on port :8080")
-    log.Fatal(http.ListenAndServe(":8080", nil))
+	go metrics(config, chaosengine, appUUID, appNS, kubeVersion)
+
+	//This section will start the HTTP server and expose
+	//any metrics on the /metrics endpoint.
+	http.Handle("/metrics", promhttp.Handler())
+	log.Info("Beginning to serve on port :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
