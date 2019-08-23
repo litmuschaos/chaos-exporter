@@ -2,7 +2,7 @@ package util
 
 import (
 	"fmt"
-
+	log "github.com/Sirupsen/logrus"
 	discovery "k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 )
@@ -10,12 +10,12 @@ import (
 func GetVersionInfo(cfg *rest.Config) (string, error) {
 	clientSet, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
-		fmt.Println("Unable to create the required ClientSet")
+		log.Info("Unable to create the required ClientSet")
 		return "", err
 	}
 	version, err := clientSet.ServerVersion()
 	if err != nil {
-		fmt.Println("ClientSet is unable to communicate with the kubernetes cluster")
+		log.Info("ClientSet is unable to communicate with the kubernetes cluster")
 		return "", err
 	}
 	return version.GitVersion, nil
