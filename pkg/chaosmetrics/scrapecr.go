@@ -1,4 +1,4 @@
-package util
+package chaosmetrics
 
 import (
     "fmt"
@@ -48,7 +48,7 @@ func statusConv (expstatus string)(numeric float64){
 */ 
 
 // GetChaosMetrics returns chaos metrics for a given chaosengine 
-func GetChaosMetrics(cfg *rest.Config, cEngine string, ns string)(totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error){
+func GetLitmusChaosMetrics(cfg *rest.Config, cEngine string, ns string)(totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error){
 
     v1alpha1.AddToScheme(scheme.Scheme)
     clientSet, err := clientV1alpha1.NewForConfig(cfg)

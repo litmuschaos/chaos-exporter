@@ -27,7 +27,7 @@ import (
   "flag"
   "net/http"
   "strings"
-  "github.com/litmuschaos/chaos-exporter/pkg/util"
+  "github.com/litmuschaos/chaos-exporter/pkg/chaosmetrics"
   log "github.com/Sirupsen/logrus"
   "github.com/prometheus/client_golang/prometheus"
   "github.com/prometheus/client_golang/prometheus/promhttp"
@@ -72,6 +72,7 @@ var (
 
 )
 
+// contains checks if the a string is already part of a list of strings
 func contains(l []string, e string) bool {
      for _, i := range l {
          if i == e {
@@ -81,6 +82,7 @@ func contains(l []string, e string) bool {
      return false
 }
 
+// getEnv checks whether an ENV variable has been set, else sets a default value
 func getEnv(key, fallback string)(string){
         if value, ok := os.LookupEnv(key); ok {
             return value
@@ -88,11 +90,13 @@ func getEnv(key, fallback string)(string){
         return fallback
 }
 
-func metrics(cfg *rest.Config, cEngine string, aUUID string, aNS string){
+
+// exporter continuously collects the chaos metrics for a given chaosengine 
+func exporter(cfg *rest.Config, chaosEngine string, appUUID string, appNS string){
 
    for {
             // Get the chaos metrics for the specified chaosengine 
-            expTotal, passTotal, failTotal, expMap, err := util.GetChaosMetrics(cfg, cEngine, aNS)
+            expTotal, passTotal, failTotal, expMap, err := chaosmetrics.GetLitmusChaosMetrics(cfg, chaosEngine, appNS)
             if err != nil {
                 //panic(err.Error())
                 log.Fatal("Unable to get metrics: ", err.Error())
@@ -114,17 +118,17 @@ func metrics(cfg *rest.Config, cEngine string, aUUID string, aNS string){
 
                 if contains(registeredResultMetrics, sanitizedExpName) {
                    prometheus.Unregister(tmpExp); prometheus.MustRegister(tmpExp)
-                   tmpExp.WithLabelValues(aUUID, cEngine).Set(verdict)
+                   tmpExp.WithLabelValues(appUUID, chaosEngine).Set(verdict)
                 } else {
                    prometheus.MustRegister(tmpExp)
-                   tmpExp.WithLabelValues(aUUID, cEngine).Set(verdict)
+                   tmpExp.WithLabelValues(appUUID, chaosEngine).Set(verdict)
                    registeredResultMetrics = append(registeredResultMetrics, sanitizedExpName)
                 }
 
                 // Set the fixed chaos metrics
-                experimentsTotal.WithLabelValues(aUUID, cEngine).Set(expTotal)
-                passedExperiments.WithLabelValues(aUUID, cEngine).Set(passTotal)
-                failedExperiments.WithLabelValues(aUUID, cEngine).Set(failTotal)
+                experimentsTotal.WithLabelValues(appUUID, chaosEngine).Set(expTotal)
+                passedExperiments.WithLabelValues(appUUID, chaosEngine).Set(passTotal)
+                failedExperiments.WithLabelValues(appUUID, chaosEngine).Set(failTotal)
             }
 
             time.Sleep(1000 * time.Millisecond)
@@ -135,10 +139,10 @@ func main(){
 
     // Get app details & chaoengine name from ENV 
     // Add checks for default
-    appUUID := os.Getenv("APP_UUID")
-    chaosengine := os.Getenv("CHAOSENGINE")
+    applicationUUID := os.Getenv("APP_UUID")
+    chaosEngine := os.Getenv("CHAOSENGINE")
     //appNS := os.Getenv("APP_NAMESPACE")
-    appNS := getEnv("APP_NAMESPACE", "default")
+    appNamespace := getEnv("APP_NAMESPACE", "default")
 
     flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
     flag.Parse()
@@ -157,7 +161,7 @@ func main(){
     }
 
     // Validate availability of mandatory ENV
-    if chaosengine == "" || appUUID == "" {
+    if chaosEngine == "" || applicationUUID == "" {
         log.Fatal("ERROR: please specify correct APP_UUID & CHAOSENGINE ENVs")
         os.Exit(1)
     }
@@ -167,7 +171,8 @@ func main(){
     prometheus.MustRegister(passedExperiments)
     prometheus.MustRegister(failedExperiments)
 
-    go metrics(config, chaosengine, appUUID, appNS)
+    // Trigger the chaos metrics collection
+    go exporter(config, chaosEngine, applicationUUID, appNamespace)
 
     //This section will start the HTTP server and expose
     //any metrics on the /metrics endpoint.
