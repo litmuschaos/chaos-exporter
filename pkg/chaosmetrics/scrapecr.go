@@ -2,14 +2,16 @@ package chaosmetrics
 
 import (
 	"fmt"
+	"strings"
+
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"strings"
+
 	// auth for gcp: optional
+	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 // Holds list of experiments in a chaosengine

@@ -84,8 +84,16 @@ func contains(l []string, e string) bool {
 	return false
 }
 
-// getEnv checks whether an ENV variable has been set, else sets a default value
-func getEnv(key, fallback string) string {
+// getnamespaceEnv checks whether an ENV variable has been set, else sets a default value
+func getnamespaceEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+// get
+func getopenebsEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
@@ -146,7 +154,9 @@ func main() {
 	//chaosEngine := os.Getenv("CHAOSENGINE")
 	chaosEngine := "engine8"
 	//appNS := os.Getenv("APP_NAMESPACE")
-	appNamespace := getEnv("APP_NAMESPACE", "default")
+	appNamespace := getnamespaceEnv("APP_NAMESPACE", "default")
+	//openEBS installation namespace
+	openebsNamespace := getopenebsEnv("OPENEBS_NAMESPACE", "openebs")
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
 	flag.Parse()
@@ -176,7 +186,7 @@ func main() {
 		//kubernetesVersion = "N/A"
 	}
 	// This function gets the openebs version
-	openebsVersion, err := version.GetopenebsVersion(config)
+	openebsVersion, err := version.GetopenebsVersion(config, openebsNamespace)
 	if err != nil {
 		log.Info("Unable to get OpenEBS Version : ", err)
 		//openebsVersion = "N/A"
