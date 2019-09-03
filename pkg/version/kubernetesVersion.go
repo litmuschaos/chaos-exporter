@@ -7,8 +7,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// GetkubernetesVersion function gets kubernetes Version
-func GetkubernetesVersion(cfg *rest.Config) (string, error) {
+// GetKubernetesVersion function gets kubernetes Version
+func GetKubernetesVersion(cfg *rest.Config) (string, error) {
 	// function to get Kubernetes Version
 	clientSet, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {

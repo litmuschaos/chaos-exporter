@@ -85,7 +85,7 @@ func contains(l []string, e string) bool {
 }
 
 // getnamespaceEnv checks whether an ENV variable has been set, else sets a default value
-func getnamespaceEnv(key, fallback string) string {
+func getNamespaceEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
@@ -93,7 +93,7 @@ func getnamespaceEnv(key, fallback string) string {
 }
 
 // get
-func getopenebsEnv(key, fallback string) string {
+func getOpenebsEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
 	}
@@ -149,14 +149,12 @@ func main() {
 
 	// Get app details & chaoengine name from ENV
 	// Add checks for default
-	//applicationUUID := os.Getenv("APP_UUID")
-	applicationUUID := "1234"
-	//chaosEngine := os.Getenv("CHAOSENGINE")
-	chaosEngine := "engine8"
+	applicationUUID := os.Getenv("APP_UUID")
+	chaosEngine := os.Getenv("CHAOSENGINE")
 	//appNS := os.Getenv("APP_NAMESPACE")
-	appNamespace := getnamespaceEnv("APP_NAMESPACE", "default")
+	appNamespace := getNamespaceEnv("APP_NAMESPACE", "default")
 	//openEBS installation namespace
-	openebsNamespace := getopenebsEnv("OPENEBS_NAMESPACE", "openebs")
+	openebsNamespace := getOpenebsEnv("OPENEBS_NAMESPACE", "openebs")
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
 	flag.Parse()
@@ -180,13 +178,13 @@ func main() {
 		os.Exit(1)
 	}
 	// This function gets the kubernetes version
-	kubernetesVersion, err := version.GetkubernetesVersion(config)
+	kubernetesVersion, err := version.GetKubernetesVersion(config)
 	if err != nil {
 		log.Info("Unable to get Kubernetes Version : ", err)
 		//kubernetesVersion = "N/A"
 	}
 	// This function gets the openebs version
-	openebsVersion, err := version.GetopenebsVersion(config, openebsNamespace)
+	openebsVersion, err := version.GetOpenebsVersion(config, openebsNamespace)
 	if err != nil {
 		log.Info("Unable to get OpenEBS Version : ", err)
 		//openebsVersion = "N/A"

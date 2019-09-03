@@ -9,8 +9,8 @@ import (
 
 var openebsVersion string
 
-// GetopenebsVersion function fetchs the OpenEBS version
-func GetopenebsVersion(cfg *rest.Config, namespace string) (string, error) {
+// GetOpenebsVersion function fetchs the OpenEBS version
+func GetOpenebsVersion(cfg *rest.Config, namespace string) (string, error) {
 	clientSet, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		log.Info("Unable to create the required ClientSet")

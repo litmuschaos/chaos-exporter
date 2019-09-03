@@ -49,7 +49,7 @@ func statusConv(expstatus string) (numeric float64) {
    - TODO: Update the chaosresult to carry verdict alone. Status & Verdict are redundant
 */
 
-// GetChaosMetrics returns chaos metrics for a given chaosengine
+// GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(cfg *rest.Config, cEngine string, ns string) (totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error) {
 
 	v1alpha1.AddToScheme(scheme.Scheme)
