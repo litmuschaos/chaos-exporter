@@ -36,7 +36,7 @@ script:
   # bdd testing dependencies - ginkgo and gomega 
   - make bdddeps
   # Running all go tests
-  - go test tests/bdd/bdd_test.go -v
+  - make test
 
 
 after_success:
