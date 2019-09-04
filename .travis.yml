@@ -15,8 +15,6 @@ env:
     - KUBECONFIG=$HOME/.kube/config
 
 before_install:
-  - sleep 15
-  - sudo apt-get install -y
   - sudo apt-get install -y curl
   - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
   # Download minikube.
@@ -24,7 +22,7 @@ before_install:
   - mkdir -p $HOME/.kube $HOME/.minikube
   - touch $KUBECONFIG
   # start minikube
-  - sudo minikube start --vm-driver=none --kubernetes-version=v1.13.0
+  - sudo minikube start --vm-driver=none --kubernetes-version=v1.15.0
   - "sudo chown -R travis: /home/travis/.minikube/"
   # Wait for Kubernetes to be up and ready.
   - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
