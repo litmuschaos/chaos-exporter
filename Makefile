@@ -2,8 +2,7 @@
 # Reference Guide - https://www.gnu.org/software/make/manual/make.html
 
 IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
-
-
+HOME = $(shell echo $$HOME)
 # list only our namespaced directories
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
@@ -76,3 +75,17 @@ dockerops:
 	# Dockerfile available in the repo root
 	sudo docker build . -f Dockerfile -t litmuschaos/chaos-exporter:ci  
 	REPONAME="litmuschaos" IMGNAME="chaos-exporter" IMGTAG="ci" ./buildscripts/push
+
+.PHONY: bdddeps
+bdddeps:
+	@echo "------------------"
+	@echo "bdd test dependencies"
+	@echo "INFO:\tverifying dependencies for bdddeps ..."
+		@echo "------------------"
+
+	@go get -u github.com/onsi/ginkgo
+	@go get -u github.com/onsi/gomega 
+	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
+	kubectl create ns litmus
+	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine.yaml
+	nohup go run cmd/exporter/main.go -kubeconfig=$(HOME)/.kube/config & 
