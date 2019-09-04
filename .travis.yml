@@ -33,11 +33,10 @@ before_script:
 
 script:
   - make godeps
-  - make all
   # bdd testing dependencies - ginkgo and gomega 
   - make bdddeps
   # Running all go tests
-  - make test
+  - go test tests/bdd/bdd_test.go -v
 
 
 after_success:
