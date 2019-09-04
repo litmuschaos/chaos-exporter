@@ -9,6 +9,9 @@ env:
     - MINIKUBE_HOME=$HOME
     - CHANGE_MINIKUBE_NONE_USER=true
     - KUBECONFIG=$HOME/.kube/config
+    - CHAOSENGINE=engine-nginx
+    - APP_UUID=1232
+    - APP_NAMESPACE=litmus
 services:
   - docker
 language: go

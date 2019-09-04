@@ -65,6 +65,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 
 			resp, err := http.Get("http://127.0.0.1:8080/metrics")
 			Expect(err).To(BeNil())
+			fmt.Println(resp.Body)
 			defer resp.Body.Close()
 		})
 	})

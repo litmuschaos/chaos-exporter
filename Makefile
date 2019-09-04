@@ -2,8 +2,8 @@
 # Reference Guide - https://www.gnu.org/software/make/manual/make.html
 
 IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
-
-
+HOME = $(shell echo $$HOME)
+ENV_VAR = $(shell export CHAOSENGINE=engine-nginx APP_UUID=1232 APP_NAMESPACE=litmus)
 # list only our namespaced directories
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
@@ -86,4 +86,4 @@ bdddeps:
 	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
 	kubectl create ns litmus
 	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine.yaml
-	nohup go run cmd/exporter/main.go -kubeconfig=/home/rajdas/.kube/config & 
+	nohup go run cmd/exporter/main.go -kubeconfig=$(HOME)/.kube/config & 
