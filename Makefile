@@ -81,8 +81,8 @@ dockerops:
 bdddeps:
 	@echo "bdd test dependencies"
 	@echo "INFO:\tverifying dependencies for bdddeps ..."
-	# @go get -u -v github.com/onsi/ginkgo
-	# @go get -u -v github.com/onsi/gomega 
+	@go get -u -v github.com/onsi/ginkgo
+	@go get -u -v github.com/onsi/gomega 
 	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
 	kubectl create ns litmus
 	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine.yaml
