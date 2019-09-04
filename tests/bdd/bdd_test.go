@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"testing"
-	"time"
 
 	"github.com/litmuschaos/chaos-exporter/pkg/chaosmetrics"
 	. "github.com/onsi/ginkgo"
@@ -26,11 +25,6 @@ var _ = BeforeSuite(func() {
 	os.Setenv("CHAOSENGINE", "engine-nginx") // set env chaosengine to rngine-nginx
 	os.Setenv("APP_NAMESPACE", "litmus")     // set enc ns to litmus
 	os.Setenv("APP_UUID", "1234")
-
-	buildCMD := exec.Command("nohup", "go", "run", "../../cmd/exporter/main.go", "-kubeconfig=/home/"+os.Getenv("HOME")+"/.kube/config", "&").Run()
-	fmt.Println(buildCMD)
-	time.Sleep(3 * time.Second)
-
 })
 
 var _ = Describe("BDD on chaos-exporter", func() {
