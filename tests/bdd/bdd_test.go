@@ -148,23 +148,25 @@ var _ = Describe("BDD on chaos-exporter", func() {
 
 				var k8sVersion string
 				var openEBSVersion string
-				k8sVersion, err = version.GetKubernetesVersion(config)            // getting kubernetes version
-				openEBSVersion, err = version.GetOpenebsVersion(config, "litmus") // getting openEBS Version
+				k8sVersion, _ = version.GetKubernetesVersion(config)            // getting kubernetes version
+				openEBSVersion, _ = version.GetOpenebsVersion(config, "litmus") // getting openEBS Version
+
+				var tmpStr = "{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"}"
 
 				By("Should be matched with total_experiments regx")
-				Expect(string(contents)).Should(ContainSubstring(string("c_engine_experiment_count{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 2")))
+				Expect(string(contents)).Should(ContainSubstring(string("c_engine_experiment_count" + tmpStr + " 2")))
 
 				By("Should be matched with failed_experiments regx")
-				Expect(string(contents)).Should(ContainSubstring(string("c_engine_failed_experiments{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 0")))
+				Expect(string(contents)).Should(ContainSubstring(string("c_engine_failed_experiments" + tmpStr + " 0")))
 
 				By("Should be matched with passed_experiments regx")
-				Expect(string(contents)).Should(ContainSubstring(string("c_engine_passed_experiments{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 0")))
+				Expect(string(contents)).Should(ContainSubstring(string("c_engine_passed_experiments" + tmpStr + " 0")))
 
 				By("Should be matched with container_kill experiment regx")
-				Expect(string(contents)).Should(ContainSubstring(string("c_exp_container_kill{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 0")))
+				Expect(string(contents)).Should(ContainSubstring(string("c_exp_container_kill" + tmpStr + " 0")))
 
 				By("Should be matched with pod_kill experiment experiments regx")
-				Expect(string(contents)).Should(ContainSubstring(string("c_exp_pod_kill{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 0")))
+				Expect(string(contents)).Should(ContainSubstring(string("c_exp_pod_kill" + tmpStr + " 0")))
 
 			}
 
