@@ -78,7 +78,7 @@ var _ = BeforeSuite(func() {
 		log.Fatal(err)
 	}
 	Expect(err).To(BeNil())
-	time.Sleep(2000000000)
+	time.Sleep(3000000000)
 
 	fmt.Println("process id", cmd.Process.Pid)
 
