@@ -81,11 +81,10 @@ bdddeps:
 	@echo "------------------"
 	@echo "bdd test dependencies"
 	@echo "INFO:\tverifying dependencies for bdddeps ..."
-		@echo "------------------"
+	@echo "------------------"
 
-	@go get -u github.com/onsi/ginkgo
-	@go get -u github.com/onsi/gomega 
-	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
-	kubectl create ns litmus
-	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine.yaml
+	# @go get -u github.com/onsi/ginkgo
+	# @go get -u github.com/onsi/gomega 
+	# kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
+	# kubectl create ns litmus
 	nohup go run cmd/exporter/main.go -kubeconfig=$(HOME)/.kube/config & 

@@ -1,19 +1,18 @@
-package bdd
+package main
 
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"testing"
-
-	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	// chaosEngineV1alpha1 "github.com/litmuschaos/chaos-exporter/vendor/github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+
+	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/api/node/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -30,7 +29,7 @@ var _ = BeforeSuite(func() {
 	v1alpha1.AddToScheme(scheme.Scheme)
 	clientSet, err := clientV1alpha1.NewForConfig(config)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	chaosEngine := &chaosEngineV1alpha1.ChaosEngine{
@@ -61,53 +60,58 @@ var _ = BeforeSuite(func() {
 	}
 
 	response, err := clientSet.ChaosEngines("litmus").Create(chaosEngine)
-	// res, _ := clientSet.ChaosEngines("litmus").List(metav1.ChaosEngineList{})
 	fmt.Println(response, err)
-
-	exec.Command("nohup", "go", "run", "../../cmd/exporter/main.go", "-kubeconfig=/home/rajdas/.kube/config", "&")
+	cmd, _ := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig=/home/rajdas/.kube/config", "&").Output()
+	cmd := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig=/home/rajdas/.kube/config")
+	cmd.Stdout = os.Stdout
+	err := cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("Just ran subprocess %d, exiting\n", cmd.Process.Pid))
 })
 
-var _ = Describe("BDD on chaos-exporter", func() {})
+var _ = Describe("BDD on chaos-exporter", func() {
 
-// BDD case 1
-// Context("Chaos Engine failed experiments", func() {
+	// BDD case 1
+	// Context("Chaos Engine failed experiments", func() {
 
-// 	It("should be a zero failed experiments", func() {
-// 		chaosengine := os.Getenv("CHAOSENGINE")
-// 		appNS := os.Getenv("APP_NAMESPACE")
+	// 	It("should be a zero failed experiments", func() {
+	// 		chaosengine := os.Getenv("CHAOSENGINE")
+	// 		appNS := os.Getenv("APP_NAMESPACE")
 
-// 		var kubeconfig string = string(os.Getenv("HOME") + "/.kube/config")
-// 		var config *rest.Config
-// 		var err error
+	// 		var kubeconfig string = string(os.Getenv("HOME") + "/.kube/config")
+	// 		var config *rest.Config
+	// 		var err error
 
-// 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	// 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 
-// 		if err != nil {
-// 			Fail(err.Error())
-// 		}
+	// 		if err != nil {
+	// 			Fail(err.Error())
+	// 		}
 
-// 		By("Checking Total failed experiments")
-// 		expTotal, passTotal, failTotal, expMap, err := chaosmetrics.GetLitmusChaosMetrics(config, chaosengine, appNS)
-// 		if err != nil {
-// 			Fail(err.Error()) // Unable to get metrics:
-// 		}
+	// 		By("Checking Total failed experiments")
+	// 		expTotal, passTotal, failTotal, expMap, err := chaosmetrics.GetLitmusChaosMetrics(config, chaosengine, appNS)
+	// 		if err != nil {
+	// 			Fail(err.Error()) // Unable to get metrics:
+	// 		}
 
-// 		fmt.Println(expTotal, failTotal, passTotal, expMap)
+	// 		fmt.Println(expTotal, failTotal, passTotal, expMap)
 
-// 		Expect(failTotal).To(Equal(float64(0)))
+	// 		Expect(failTotal).To(Equal(float64(0)))
 
-// 	})
-// })
-// // BDD case 2
-// Context("Curl the prometheus metrics", func() {
-// 	It("Should return prometheus metrics", func() {
+	// 	})
+	// })
+	// // BDD case 2
+	// Context("Curl the prometheus metrics", func() {
+	// 	It("Should return prometheus metrics", func() {
 
-// 		resp, err := http.Get("http://127.0.0.1:8080/metrics")
-// 		Expect(err).To(BeNil())
-// 		defer resp.Body.Close()
-// 	})
-// })
-// })
+	// 		resp, err := http.Get("http://127.0.0.1:8080/metrics")
+	// 		Expect(err).To(BeNil())
+	// 		defer resp.Body.Close()
+	// 	})
+	// })
+})
 
 // deleting all unused resources
 var _ = AfterSuite(func() {})
