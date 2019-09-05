@@ -145,8 +145,11 @@ var _ = Describe("BDD on chaos-exporter", func() {
 					os.Exit(1)
 				}
 				fmt.Printf("%s\n", string(contents))
-				k8sVersion, err := version.GetKubernetesVersion(config)            // getting kubernetes version
-				openEBSVersion, err := version.GetOpenebsVersion(config, "litmus") // getting openEBS Version
+
+				var k8sVersion string
+				var openEBSVersion string
+				k8sVersion, err = version.GetKubernetesVersion(config)            // getting kubernetes version
+				openEBSVersion, err = version.GetOpenebsVersion(config, "litmus") // getting openEBS Version
 
 				By("Should be matched with total_experiments regx")
 				Expect(string(contents)).Should(ContainSubstring(string("c_engine_experiment_count{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 2")))
