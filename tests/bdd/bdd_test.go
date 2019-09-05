@@ -9,19 +9,13 @@ import (
 	"testing"
 	"time"
 
-	// chaosEngineV1alpha1 "github.com/litmuschaos/chaos-exporter/vendor/github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	// v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
-	// chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	// clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
-
 	"github.com/litmuschaos/chaos-exporter/pkg/chaosmetrics"
-	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
-
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
-	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
+	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -75,8 +69,8 @@ var _ = BeforeSuite(func() {
 
 	fmt.Println(response, err)
 
-	By("Creating ChaosEngine")
-	cmd := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig=/home/rajdas/.kube/config")
+	By("Building Exporter")
+	cmd := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig="+os.Getenv("HOME")+"/.kube/config")
 	cmd.Stdout = os.Stdout
 	err = cmd.Start()
 
@@ -84,10 +78,11 @@ var _ = BeforeSuite(func() {
 		log.Fatal(err)
 	}
 	Expect(err).To(BeNil())
+	time.Sleep(2000000000)
 
 	fmt.Println("process id", cmd.Process.Pid)
 
-	time.Sleep(2000000000)
+	// wait for execution of exporter
 
 })
 
@@ -122,7 +117,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 
 		})
 	})
-	// // BDD case 2
+	// BDD case 2
 	Context("Curl the prometheus metrics--", func() {
 		It("Should return prometheus metrics", func() {
 
