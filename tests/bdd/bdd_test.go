@@ -2,18 +2,29 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"os"
+	"os/exec"
 	"testing"
+	"time"
 
 	// chaosEngineV1alpha1 "github.com/litmuschaos/chaos-exporter/vendor/github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	// v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
+	// chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
 
+	"github.com/litmuschaos/chaos-exporter/pkg/chaosmetrics"
 	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
+
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
+	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -32,6 +43,7 @@ var _ = BeforeSuite(func() {
 		fmt.Println(err)
 	}
 
+	By("Creating ChaosEngine")
 	chaosEngine := &chaosEngineV1alpha1.ChaosEngine{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "engine-nginx",
@@ -58,70 +70,78 @@ var _ = BeforeSuite(func() {
 			},
 		},
 	}
-
 	response, err := clientSet.ChaosEngines("litmus").Create(chaosEngine)
+	Expect(err).To(BeNil())
+
 	fmt.Println(response, err)
-	cmd, _ := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig=/home/rajdas/.kube/config", "&").Output()
+
+	By("Creating ChaosEngine")
 	cmd := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig=/home/rajdas/.kube/config")
 	cmd.Stdout = os.Stdout
-	err := cmd.Start()
+	err = cmd.Start()
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Just ran subprocess %d, exiting\n", cmd.Process.Pid))
+	Expect(err).To(BeNil())
+
+	fmt.Println("process id", cmd.Process.Pid)
+
+	time.Sleep(2000000000)
+
 })
 
 var _ = Describe("BDD on chaos-exporter", func() {
 
-	// BDD case 1
-	// Context("Chaos Engine failed experiments", func() {
+	// // BDD case 1
+	Context("Chaos Engine failed experiments", func() {
 
-	// 	It("should be a zero failed experiments", func() {
-	// 		chaosengine := os.Getenv("CHAOSENGINE")
-	// 		appNS := os.Getenv("APP_NAMESPACE")
+		It("should be a zero failed experiments", func() {
+			chaosengine := os.Getenv("CHAOSENGINE")
+			appNS := os.Getenv("APP_NAMESPACE")
 
-	// 		var kubeconfig string = string(os.Getenv("HOME") + "/.kube/config")
-	// 		var config *rest.Config
-	// 		var err error
+			var kubeconfig string = string(os.Getenv("HOME") + "/.kube/config")
+			var config *rest.Config
+			var err error
 
-	// 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+			config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 
-	// 		if err != nil {
-	// 			Fail(err.Error())
-	// 		}
+			if err != nil {
+				Fail(err.Error())
+			}
 
-	// 		By("Checking Total failed experiments")
-	// 		expTotal, passTotal, failTotal, expMap, err := chaosmetrics.GetLitmusChaosMetrics(config, chaosengine, appNS)
-	// 		if err != nil {
-	// 			Fail(err.Error()) // Unable to get metrics:
-	// 		}
+			By("Checking Total failed experiments")
+			expTotal, passTotal, failTotal, expMap, err := chaosmetrics.GetLitmusChaosMetrics(config, chaosengine, appNS)
+			if err != nil {
+				Fail(err.Error()) // Unable to get metrics:
+			}
 
-	// 		fmt.Println(expTotal, failTotal, passTotal, expMap)
+			fmt.Println(expTotal, failTotal, passTotal, expMap)
 
-	// 		Expect(failTotal).To(Equal(float64(0)))
+			Expect(failTotal).To(Equal(float64(0)))
 
-	// 	})
-	// })
+		})
+	})
 	// // BDD case 2
-	// Context("Curl the prometheus metrics", func() {
-	// 	It("Should return prometheus metrics", func() {
+	Context("Curl the prometheus metrics--", func() {
+		It("Should return prometheus metrics", func() {
 
-	// 		resp, err := http.Get("http://127.0.0.1:8080/metrics")
-	// 		Expect(err).To(BeNil())
-	// 		defer resp.Body.Close()
-	// 	})
-	// })
+			resp, err := http.Get("http://127.0.0.1:8080/metrics")
+			Expect(err).To(BeNil())
+			defer resp.Body.Close()
+		})
+	})
 })
 
 // deleting all unused resources
-var _ = AfterSuite(func() {})
+var _ = AfterSuite(func() {
 
-// By("Deleting chaosengine CRD")
-// // ceDeleteCRDs := exec.Command("kubectl", "delete", "crds", "chaosengines.litmuschaos.io").Run()
-// Expect(ceDeleteCRDs).To(BeNil())
+	By("Deleting chaosengine CRD")
+	ceDeleteCRDs := exec.Command("kubectl", "delete", "crds", "chaosengines.litmuschaos.io").Run()
+	Expect(ceDeleteCRDs).To(BeNil())
 
-// By("Deleting namespace litmus")
-// deleteNS := exec.Command("kubectl", "delete", "ns", "litmus").Run()
-// Expect(deleteNS).To(BeNil())
+	By("Deleting namespace litmus")
+	deleteNS := exec.Command("kubectl", "delete", "ns", "litmus").Run()
+	Expect(deleteNS).To(BeNil())
 
-// })
+})
