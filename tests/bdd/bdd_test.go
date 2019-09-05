@@ -80,7 +80,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).To(BeNil())
 
 	// wait for execution of exporter
-	time.Sleep(3000000000)
+	time.Sleep(4000000000)
 
 	fmt.Println("process id", cmd.Process.Pid)
 
