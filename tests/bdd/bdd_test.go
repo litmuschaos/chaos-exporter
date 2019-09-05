@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +11,8 @@ import (
 	"time"
 
 	"github.com/litmuschaos/chaos-exporter/pkg/chaosmetrics"
+	version "github.com/litmuschaos/chaos-exporter/pkg/version"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -18,9 +21,14 @@ import (
 	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+var kubeconfig = string(os.Getenv("HOME") + "/.kube/config")
+var config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+var chaosengine = os.Getenv("CHAOSENGINE")
+var appNS = os.Getenv("APP_NAMESPACE")
+var appUUID = os.Getenv("APP_UUID")
 
 func TestChaos(t *testing.T) {
 
@@ -29,9 +37,12 @@ func TestChaos(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	var kubeconfig string = string(os.Getenv("HOME") + "/.kube/config")
-	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	v1alpha1.AddToScheme(scheme.Scheme)
+
+	err = v1alpha1.AddToScheme(scheme.Scheme)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	clientSet, err := clientV1alpha1.NewForConfig(config)
 	if err != nil {
 		fmt.Println(err)
@@ -92,20 +103,12 @@ var _ = Describe("BDD on chaos-exporter", func() {
 	Context("Chaos Engine failed experiments", func() {
 
 		It("should be a zero failed experiments", func() {
-			chaosengine := os.Getenv("CHAOSENGINE")
-			appNS := os.Getenv("APP_NAMESPACE")
-
-			var kubeconfig string = string(os.Getenv("HOME") + "/.kube/config")
-			var config *rest.Config
-			var err error
-
-			config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 
 			if err != nil {
 				Fail(err.Error())
 			}
 
-			By("Checking Total failed experiments")
+			By("Checking experiments metrics")
 			expTotal, passTotal, failTotal, expMap, err := chaosmetrics.GetLitmusChaosMetrics(config, chaosengine, appNS)
 			if err != nil {
 				Fail(err.Error()) // Unable to get metrics:
@@ -113,17 +116,55 @@ var _ = Describe("BDD on chaos-exporter", func() {
 
 			fmt.Println(expTotal, failTotal, passTotal, expMap)
 
+			//failed experiments should be 0
 			Expect(failTotal).To(Equal(float64(0)))
+			// passed experiments should be 0
+			Expect(passTotal).To(Equal(float64(0)))
+			// total experiment is 2 because we have mentioned it in the chaosengine spec
+			Expect(expTotal).To(Equal(float64(2)))
 
 		})
 	})
+
 	// BDD case 2
 	Context("Curl the prometheus metrics--", func() {
 		It("Should return prometheus metrics", func() {
 
-			resp, err := http.Get("http://127.0.0.1:8080/metrics")
+			By("Sending get request to metrics")
+			response, err := http.Get("http://127.0.0.1:8080/metrics")
 			Expect(err).To(BeNil())
-			defer resp.Body.Close()
+
+			if err != nil {
+				fmt.Printf("%s", err)
+				os.Exit(1)
+			} else {
+				defer response.Body.Close()
+				contents, err := ioutil.ReadAll(response.Body)
+				if err != nil {
+					fmt.Printf("%s", err)
+					os.Exit(1)
+				}
+				fmt.Printf("%s\n", string(contents))
+				k8sVersion, err := version.GetKubernetesVersion(config)            // getting kubernetes version
+				openEBSVersion, err := version.GetOpenebsVersion(config, "litmus") // getting openEBS Version
+
+				By("Should be matched with total_experiments regx")
+				Expect(string(contents)).Should(ContainSubstring(string("c_engine_experiment_count{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 2")))
+
+				By("Should be matched with failed_experiments regx")
+				Expect(string(contents)).Should(ContainSubstring(string("c_engine_failed_experiments{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 0")))
+
+				By("Should be matched with passed_experiments regx")
+				Expect(string(contents)).Should(ContainSubstring(string("c_engine_passed_experiments{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 0")))
+
+				By("Should be matched with container_kill experiment regx")
+				Expect(string(contents)).Should(ContainSubstring(string("c_exp_container_kill{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 0")))
+
+				By("Should be matched with pod_kill experiment experiments regx")
+				Expect(string(contents)).Should(ContainSubstring(string("c_exp_pod_kill{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"} 0")))
+
+			}
+
 		})
 	})
 })
