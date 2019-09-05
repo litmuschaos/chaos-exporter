@@ -1,16 +1,46 @@
-dist: trusty
 sudo: required
-install: true
+dist: xenial
+env:
+  global:
+    - CHANGE_MINIKUBE_NONE_USER=true
+    - MINIKUBE_WANTUPDATENOTIFICATION=false
+    - MINIKUBE_WANTREPORTERRORPROMPT=false
+    - MINIKUBE_HOME=$HOME
+    - CHANGE_MINIKUBE_NONE_USER=true
+    - KUBECONFIG=$HOME/.kube/config
+    - CHAOSENGINE=engine-nginx
+    - APP_UUID=1234
+    - APP_NAMESPACE=litmus
+services:
+  - docker
 language: go
 go:
   - 1.11.2
-env:
-  global:
-    - GOARCH=amd64
-before_install:
-  - sleep 15
-  - sudo apt-get install -y
-  - sudo apt-get install -y curl
+
+addons:
+  apt:
+    update: true
+
+before_script:
+  # Download kubectl, which is a requirement for using minikube.
+  - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+  # Download minikube.
+  - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.35.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+  - mkdir -p $HOME/.kube $HOME/.minikube
+  - touch $KUBECONFIG
+  - sudo minikube start --vm-driver=none --kubernetes-version=v1.13.0
+  - "sudo chown -R travis: /home/travis/.minikube/"
+  # Wait for Kubernetes to be up and ready.
+  - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
+
 script:
+  # Installing Go Dependencies
   - make godeps
-  - make all
+  # bdd testing dependencies - ginkgo and gomega 
+  - make bdddeps
+  # Running all go tests
+  - make test
+
+after_success:
+  - sudo minikube delete
+  - make dockerops
