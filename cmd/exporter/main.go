@@ -151,7 +151,6 @@ func main() {
 	// Add checks for default
 	applicationUUID := os.Getenv("APP_UUID")
 	chaosEngine := os.Getenv("CHAOSENGINE")
-	//appNS := os.Getenv("APP_NAMESPACE")
 	appNamespace := getNamespaceEnv("APP_NAMESPACE", "default")
 	//openEBS installation namespace
 	openebsNamespace := getOpenebsEnv("OPENEBS_NAMESPACE", "openebs")
