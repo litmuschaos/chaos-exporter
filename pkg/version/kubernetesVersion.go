@@ -22,13 +22,4 @@ func GetKubernetesVersion(cfg *rest.Config) (string, error) {
 	}
 	return version.GitVersion, nil
 
-	/*fmt.Println("Server Major : ", version.Major)
-	fmt.Println("Server Minor : ", version.Minor)
-	fmt.Println("Server GitVersion : ", version.GitVersion)
-	fmt.Println("Server GitCommit : ", version.GitCommit)
-	fmt.Println("Server GitTreeState : ", version.GitTreeState)
-	fmt.Println("Server BuildDate : ", version.BuildDate)
-	fmt.Println("Server GoVersion : ", version.GoVersion)
-	fmt.Println("Server Compiler : ", version.Compiler)
-	fmt.Println("Server Platform : ", version.Platform)*/
 }

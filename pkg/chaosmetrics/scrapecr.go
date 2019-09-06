@@ -38,7 +38,6 @@ var err error
 func statusConv(expstatus string) (numeric float64) {
 	if numeric, ok := numericstatus[expstatus]; ok {
 		return numeric
-		//fmt.Printf("%v", numeric)
 	}
 	//return 127
 	return 0
