@@ -14,6 +14,8 @@ type ExampleV1Alpha1Interface interface {
 	ChaosEngines(namespace string) ChaosEngineInterface
 	// ChaosResults with namespace attribute
 	ChaosResults(namespace string) ChaosResultInterface
+	//
+	ChaosExperiments(namespace string) ChaosExperimentInterface
 }
 
 //ExampleV1Alpha1Client type defines the rest client for chaos resources
@@ -37,6 +39,7 @@ func NewForConfig(c *rest.Config) (*ExampleV1Alpha1Client, error) {
 	return &ExampleV1Alpha1Client{restClient: client}, nil
 }
 
+// ChaosEngines Interface
 func (c *ExampleV1Alpha1Client) ChaosEngines(namespace string) ChaosEngineInterface {
 	return &chaosEngineClient{
 		restClient: c.restClient,
@@ -44,6 +47,15 @@ func (c *ExampleV1Alpha1Client) ChaosEngines(namespace string) ChaosEngineInterf
 	}
 }
 
+// ChaosExperiments Interface
+func (c *ExampleV1Alpha1Client) ChaosExperiments(namespace string) ChaosExperimentInterface {
+	return &chaosExperimentClient{
+		restClient: c.restClient,
+		ns:         namespace,
+	}
+}
+
+// ChaosResults Interface
 func (c *ExampleV1Alpha1Client) ChaosResults(namespace string) ChaosResultInterface {
 	return &chaosResultClient{
 		restClient: c.restClient,
