@@ -1,4 +1,4 @@
-package chaosmetrics
+package controller
 
 import (
 	"fmt"
@@ -28,9 +28,6 @@ var numericstatus = map[string]float64{
 	"pass":         3,
 }
 
-// Holds Error type
-var err error
-
 // Utility fn to return numeric value for a result
 func statusConv(expstatus string) (numeric float64) {
 	if numeric, ok := numericstatus[expstatus]; ok {
@@ -41,14 +38,14 @@ func statusConv(expstatus string) (numeric float64) {
 }
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
-func GetLitmusChaosMetrics(cfg *rest.Config, cEngine string, ns string) (totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error) {
+func GetLitmusChaosMetrics(cfg *rest.Config, exporterSpec ExporterSpec) (totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error) {
 
 	clientSet, err := clientV1alpha1.NewForConfig(cfg)
 	if err != nil {
 		return 0, 0, 0, nil, err
 	}
 
-	engine, err := clientSet.LitmuschaosV1alpha1().ChaosEngines(ns).Get(cEngine, metav1.GetOptions{})
+	engine, err := clientSet.LitmuschaosV1alpha1().ChaosEngines(exporterSpec.AppNS).Get(exporterSpec.ChaosEngine, metav1.GetOptions{})
 	if err != nil {
 		return 0, 0, 0, nil, err
 	}
@@ -69,8 +66,8 @@ func GetLitmusChaosMetrics(cfg *rest.Config, cEngine string, ns string) (totalEx
 	//for _, test:= range chaosexperimentlist{
 
 	for _, test := range chaosexperimentlist {
-		chaosresultname := fmt.Sprintf("%s-%s", cEngine, test)
-		testresultdump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(ns).Get(chaosresultname, metav1.GetOptions{})
+		chaosresultname := fmt.Sprintf("%s-%s", exporterSpec.ChaosEngine, test)
+		testresultdump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(exporterSpec.AppNS).Get(chaosresultname, metav1.GetOptions{})
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				// lack of result cr indicates experiment not executed

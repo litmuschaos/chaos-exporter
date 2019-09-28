@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/litmuschaos/chaos-exporter/pkg/chaosmetrics"
+	"github.com/litmuschaos/chaos-exporter/controller"
 	version "github.com/litmuschaos/chaos-exporter/pkg/version"
 
 	. "github.com/onsi/ginkgo"
@@ -24,11 +24,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var kubeconfig = string(os.Getenv("HOME") + "/.kube/config")
+var kubeconfig = os.Getenv("HOME") + "/.kube/config"
 var config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-var chaosengine = os.Getenv("CHAOSENGINE")
-var appNS = os.Getenv("APP_NAMESPACE")
 var appUUID = os.Getenv("APP_UUID")
+
+var exporterSpec = controller.ExporterSpec{
+	AppNS: os.Getenv("APP_NAMESPACE"),
+	ChaosEngine: os.Getenv("CHAOSENGINE"),
+}
 
 func TestChaos(t *testing.T) {
 
@@ -103,7 +106,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 			}
 
 			By("Checking experiments metrics")
-			expTotal, passTotal, failTotal, expMap, err := chaosmetrics.GetLitmusChaosMetrics(config, chaosengine, appNS)
+			expTotal, passTotal, failTotal, expMap, err := controller.GetLitmusChaosMetrics(config, exporterSpec)
 			if err != nil {
 				Fail(err.Error()) // Unable to get metrics:
 			}
