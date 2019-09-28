@@ -22,15 +22,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	log "github.com/Sirupsen/logrus"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"net/http"
 	"os"
 
-	"github.com/litmuschaos/chaos-exporter/pkg/version"
 	"github.com/litmuschaos/chaos-exporter/controller"
 )
 
@@ -55,66 +54,58 @@ func getOpenebsEnv(key, fallback string) string {
 	return fallback
 }
 
-func main() {
-
-	// Get app details & chaoengine name from ENV
+func getExporterSpecs() (controller.ExporterSpec, error) {
+	// Get app details & chaosengine name from ENV
 	// Add checks for default
 	applicationUUID := os.Getenv("APP_UUID")
 	chaosEngine := os.Getenv("CHAOSENGINE")
-	appNamespace := getNamespaceEnv("APP_NAMESPACE", "default")
-	//openEBS installation namespace
-	openebsNamespace := getOpenebsEnv("OPENEBS_NAMESPACE", "openebs")
-
-	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
-	flag.Parse()
-
-	// Use in-cluster config if kubeconfig file not available
-	if kubeconfig == "" {
-		log.Info("using the in-cluster config")
-		config, err = rest.InClusterConfig()
-	} else {
-		log.Info("using configuration from: ", kubeconfig)
-		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-	}
-
-	if err != nil {
-		panic(err.Error())
-	}
 
 	// Validate availability of mandatory ENV
 	if chaosEngine == "" || applicationUUID == "" {
-		log.Fatal("ERROR: please specify correct APP_UUID & CHAOSENGINE ENVs")
-		os.Exit(1)
+		return controller.ExporterSpec{}, fmt.Errorf("please specify correct APP_UUID & CHAOSENGINE ENVs")
 	}
-	// This function gets the kubernetes version
-	kubernetesVersion, err := version.GetKubernetesVersion(config)
-	if err != nil {
-		log.Info("Unable to get Kubernetes Version : ", err)
-		//kubernetesVersion = "N/A"
-	}
-	// This function gets the openebs version
-	openebsVersion, err := version.GetOpenebsVersion(config, openebsNamespace)
-	if err != nil {
-		log.Info("Unable to get OpenEBS Version : ", err)
-		//openebsVersion = "N/A"
-	}
-	// Register the fixed (count) chaos metrics
-	prometheus.MustRegister(controller.ExperimentsTotal)
-	prometheus.MustRegister(controller.PassedExperiments)
-	prometheus.MustRegister(controller.FailedExperiments)
 
 	exporterSpec := controller.ExporterSpec{
 		ChaosEngine: chaosEngine,
 		AppUUID: applicationUUID,
-		AppNS: appNamespace,
-		KubernetesVersion: kubernetesVersion,
-		OpenebsVersion: openebsVersion,
+		AppNS: getNamespaceEnv("APP_NAMESPACE", "default"),
+		OpenebsNamespace: getOpenebsEnv("OPENEBS_NAMESPACE", "openebs"),
+	}
+	return exporterSpec, nil
+}
+
+// getKubeConfig setup the config for access cluster resource
+func getKubeConfig() (*rest.Config, error) {
+	// Use in-cluster config if kubeconfig file not available
+	if kubeconfig == "" {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return config, err
+		}
+	}
+	log.Info("using configuration from: ", kubeconfig)
+	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
+	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	if err != nil {
+		return config, err
+	}
+	return config, err
+}
+
+func main() {
+	flag.Parse()
+	// Setting up kubeconfig
+	config, err := getKubeConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+	exporterSpec, err := getExporterSpecs()
+	if err != nil {
+		log.Fatalf("Error: ", err)
 	}
 	// Trigger the chaos metrics collection
 	go controller.Exporter(config, exporterSpec)
-
-	//This section will start the HTTP server and expose
-	//any metrics on the /metrics endpoint.
+	//This section will start the HTTP server and expose metrics on the /metrics endpoint.
 	http.Handle("/metrics", promhttp.Handler())
 	log.Info("Beginning to serve on port :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))

@@ -1,15 +1,36 @@
 package controller
 
 import (
+	"strings"
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/rest"
-	"strings"
-	"time"
-	)
+
+	"github.com/litmuschaos/chaos-exporter/pkg/version"
+)
 
 // Exporter continuously collects the chaos metrics for a given chaosengine
 func Exporter(config *rest.Config, exporterSpec ExporterSpec) {
+
+	// Register the fixed (count) chaos metrics
+	prometheus.MustRegister(ExperimentsTotal)
+	prometheus.MustRegister(PassedExperiments)
+	prometheus.MustRegister(FailedExperiments)
+
+	// This function gets the kubernetes version
+	kubernetesVersion, err := version.GetKubernetesVersion(config)
+	if err != nil {
+		log.Info("Unable to get Kubernetes Version : ", err)
+		//kubernetesVersion = "N/A"
+	}
+	// This function gets the openebs version
+	openebsVersion, err := version.GetOpenebsVersion(config, exporterSpec.OpenebsNamespace)
+	if err != nil {
+		log.Info("Unable to get OpenEBS Version : ", err)
+		//openebsVersion = "N/A"
+	}
 
 	for {
 		// Get the chaos metrics for the specified chaosengine
@@ -35,17 +56,17 @@ func Exporter(config *rest.Config, exporterSpec ExporterSpec) {
 			if contains(registeredResultMetrics, sanitizedExpName) {
 				prometheus.Unregister(tmpExp)
 				prometheus.MustRegister(tmpExp)
-				tmpExp.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, exporterSpec.KubernetesVersion, exporterSpec.OpenebsVersion).Set(verdict)
+				tmpExp.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, kubernetesVersion, openebsVersion).Set(verdict)
 			} else {
 				prometheus.MustRegister(tmpExp)
-				tmpExp.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, exporterSpec.KubernetesVersion, exporterSpec.OpenebsVersion).Set(verdict)
+				tmpExp.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, kubernetesVersion, openebsVersion).Set(verdict)
 				registeredResultMetrics = append(registeredResultMetrics, sanitizedExpName)
 			}
 
 			// Set the fixed chaos metrics
-			ExperimentsTotal.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, exporterSpec.KubernetesVersion, exporterSpec.OpenebsVersion).Set(expTotal)
-			PassedExperiments.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, exporterSpec.KubernetesVersion, exporterSpec.OpenebsVersion).Set(passTotal)
-			FailedExperiments.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, exporterSpec.KubernetesVersion, exporterSpec.OpenebsVersion).Set(failTotal)
+			ExperimentsTotal.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, kubernetesVersion, openebsVersion).Set(expTotal)
+			PassedExperiments.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, kubernetesVersion, openebsVersion).Set(passTotal)
+			FailedExperiments.WithLabelValues(exporterSpec.AppUUID, exporterSpec.ChaosEngine, kubernetesVersion, openebsVersion).Set(failTotal)
 		}
 
 		time.Sleep(1000 * time.Millisecond)

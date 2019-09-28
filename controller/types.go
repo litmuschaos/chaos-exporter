@@ -41,6 +41,5 @@ type ExporterSpec struct {
 	ChaosEngine string
 	AppUUID string
 	AppNS string
-	KubernetesVersion string
-	OpenebsVersion string
+	OpenebsNamespace string
 }
