@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"k8s.io/client-go/kubernetes"
 	"strings"
 	"time"
 
@@ -13,23 +14,24 @@ import (
 
 // Exporter continuously collects the chaos metrics for a given chaosengine
 func Exporter(config *rest.Config, exporterSpec ExporterSpec) {
-
+	k8sClientSet, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		log.Info("Unable to create the kubernetes ClientSet")
+	}
 	// Register the fixed (count) chaos metrics
 	prometheus.MustRegister(ExperimentsTotal)
 	prometheus.MustRegister(PassedExperiments)
 	prometheus.MustRegister(FailedExperiments)
 
 	// This function gets the kubernetes version
-	kubernetesVersion, err := version.GetKubernetesVersion(config)
+	kubernetesVersion, err := version.GetKubernetesVersion(k8sClientSet)
 	if err != nil {
 		log.Info("Unable to get Kubernetes Version : ", err)
-		//kubernetesVersion = "N/A"
 	}
 	// This function gets the openebs version
-	openebsVersion, err := version.GetOpenebsVersion(config, exporterSpec.OpenebsNamespace)
+	openebsVersion, err := version.GetOpenebsVersion(k8sClientSet, exporterSpec.OpenebsNamespace)
 	if err != nil {
 		log.Info("Unable to get OpenEBS Version : ", err)
-		//openebsVersion = "N/A"
 	}
 
 	for {

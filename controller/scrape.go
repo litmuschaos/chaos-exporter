@@ -12,7 +12,7 @@ import (
 )
 
 // Holds list of experiments in a chaosengine
-var chaosexperimentlist []string
+var chaosExperimentList []string
 
 // Holds a map of experiment: result
 var chaosresultmap map[string]string
@@ -38,9 +38,9 @@ func statusConv(expstatus string) (numeric float64) {
 }
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
-func GetLitmusChaosMetrics(cfg *rest.Config, exporterSpec ExporterSpec) (totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error) {
+func GetLitmusChaosMetrics(config *rest.Config, exporterSpec ExporterSpec) (float64, float64, float64, map[string]float64, error) {
 
-	clientSet, err := clientV1alpha1.NewForConfig(cfg)
+	clientSet, err := clientV1alpha1.NewForConfig(config)
 	if err != nil {
 		return 0, 0, 0, nil, err
 	}
@@ -50,28 +50,18 @@ func GetLitmusChaosMetrics(cfg *rest.Config, exporterSpec ExporterSpec) (totalEx
 		return 0, 0, 0, nil, err
 	}
 
-	/////////////////////////////////////////////////////////
-	/*METRIC*/
-	totalExpCount = float64(len(engine.Spec.Experiments)) //
-	/////////////////////////////////////////////////////////
-
 	for _, element := range engine.Spec.Experiments {
-		chaosexperimentlist = append(chaosexperimentlist, element.Name)
+		chaosExperimentList = append(chaosExperimentList, element.Name)
 	}
 
-	// Initialize the chaosresult map before entering loop
-	chaosresultmap := make(map[string]string)
-
 	// Set default values on the chaosresult map before populating w/ actual values
-	//for _, test:= range chaosexperimentlist{
 
-	for _, test := range chaosexperimentlist {
+	for _, test := range chaosExperimentList {
 		chaosresultname := fmt.Sprintf("%s-%s", exporterSpec.ChaosEngine, test)
 		testresultdump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(exporterSpec.AppNS).Get(chaosresultname, metav1.GetOptions{})
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				// lack of result cr indicates experiment not executed
-				//chaosresultmap[chaosresultname] = "not-executed"
 				chaosresultmap[test] = "not-executed"
 			}
 			//return 0, 0, 0, nil, err
@@ -90,13 +80,6 @@ func GetLitmusChaosMetrics(cfg *rest.Config, exporterSpec ExporterSpec) (totalEx
 		}
 	}
 
-	/////////////////////////////////////////////////
-	/*METRIC*/                       //
-	totalPassedExp = float64(pcount) //
-	totalFailedExp = float64(fcount) //
-	/////////////////////////////////////////////////
-	//fmt.Printf("%+v %+v %+v\n", totalExpCount, totalPassedExp, totalFailedExp)
-
 	//Map verdict to numerical values {0-notstarted, 1-running, 2-fail, 3-pass}
 	statusmap := make(map[string]float64)
 	for index, status := range chaosresultmap {
@@ -104,6 +87,10 @@ func GetLitmusChaosMetrics(cfg *rest.Config, exporterSpec ExporterSpec) (totalEx
 		statusmap[index] = val
 	}
 	fmt.Printf("%+v\n", statusmap)
+
+	totalPassedExp := float64(pcount)
+	totalFailedExp := float64(fcount)
+	totalExpCount := float64(len(engine.Spec.Experiments))
 
 	return totalExpCount, totalPassedExp, totalFailedExp, statusmap, nil
 }
