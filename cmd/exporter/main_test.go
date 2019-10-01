@@ -1,7 +1,3 @@
-/*
-TODO: Test functions for chaos exporter
-*/
-
 package main
 
 import (

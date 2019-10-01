@@ -8,7 +8,7 @@
    Dynamic (experiment list may vary based on c.engine):
      - States of individual chaos experiments
      - {not-executed:0, running:1, fail:2, pass:3}
-       TODO: Improve representaion of test state
+       Improve representation of test state
 
    Common experiments include:
 
