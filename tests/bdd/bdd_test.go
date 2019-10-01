@@ -16,9 +16,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
 	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
@@ -67,15 +67,9 @@ var _ = BeforeSuite(func() {
 					Name: "pod-kill",
 				},
 			},
-			Schedule: chaosEngineV1alpha1.ChaosSchedule{
-				Interval:          "half-hourly",
-				ExcludedTimes:     "",
-				ExcludedDays:      "",
-				ConcurrencyPolicy: "",
-			},
 		},
 	}
-	response, err := clientSet.ChaosEngines("litmus").Create(chaosEngine)
+	response, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("litmus").Create(chaosEngine)
 	Expect(err).To(BeNil())
 
 	fmt.Println(response, err)
