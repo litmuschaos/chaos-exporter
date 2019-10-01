@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-
 	// auth for gcp: optional
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	clientV1alpha1 "github.com/litmuschaos/chaos-exporter/pkg/clientset/v1alpha1"
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis"
+	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -51,13 +48,12 @@ func statusConv(expstatus string) (numeric float64) {
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(cfg *rest.Config, cEngine string, ns string) (totalExpCount, totalPassedExp, totalFailedExp float64, rMap map[string]float64, err error) {
 
-	v1alpha1.AddToScheme(scheme.Scheme)
 	clientSet, err := clientV1alpha1.NewForConfig(cfg)
 	if err != nil {
 		return 0, 0, 0, nil, err
 	}
 
-	engine, err := clientSet.ChaosEngines(ns).Get(cEngine, metav1.GetOptions{})
+	engine, err := clientSet.LitmuschaosV1alpha1().ChaosEngines(ns).Get(cEngine, metav1.GetOptions{})
 	if err != nil {
 		return 0, 0, 0, nil, err
 	}
@@ -79,7 +75,7 @@ func GetLitmusChaosMetrics(cfg *rest.Config, cEngine string, ns string) (totalEx
 
 	for _, test := range chaosexperimentlist {
 		chaosresultname := fmt.Sprintf("%s-%s", cEngine, test)
-		testresultdump, err := clientSet.ChaosResults(ns).Get(chaosresultname, metav1.GetOptions{})
+		testresultdump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(ns).Get(chaosresultname, metav1.GetOptions{})
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				// lack of result cr indicates experiment not executed

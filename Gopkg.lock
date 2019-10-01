@@ -169,14 +169,17 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5b2f384069bc4bac9bffedacc7becf0900f209ed00a33487b046ed00a2dc8597"
+  digest = "1:26a484cea518fd03957e73e76cc6849d58b091b5be9e6f1e2702760c512184cf"
   name = "github.com/litmuschaos/chaos-operator"
   packages = [
     "pkg/apis",
     "pkg/apis/litmuschaos/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1",
   ]
   pruneopts = "UT"
-  revision = "0dbbe5a595622906a2f50eeadbe9186a905c597c"
+  revision = "d33cf2254540baa924f614e5679bb0c15f376e79"
 
 [[projects]]
   branch = "master"
@@ -660,13 +663,12 @@
     "github.com/Sirupsen/logrus",
     "github.com/litmuschaos/chaos-operator/pkg/apis",
     "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1",
+    "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
     "github.com/prometheus/client_golang/prometheus",
     "github.com/prometheus/client_golang/prometheus/promhttp",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
-    "k8s.io/apimachinery/pkg/runtime/schema",
-    "k8s.io/apimachinery/pkg/runtime/serializer",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/kubernetes/scheme",
