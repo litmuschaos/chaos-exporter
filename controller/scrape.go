@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"k8s.io/client-go/rest"
 	// auth for gcp: optional
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
+	//"github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,12 +42,7 @@ func statusConversion(expStatus string) (numeric float64) {
 }
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
-func GetLitmusChaosMetrics(config *rest.Config, exporterSpec ExporterSpec) (float64, float64, float64, map[string]float64, error) {
-
-	clientSet, err := clientV1alpha1.NewForConfig(config)
-	if err != nil {
-		return 0, 0, 0, nil, err
-	}
+func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec ExporterSpec) (float64, float64, float64, map[string]float64, error) {
 
 	engine, err := clientSet.LitmuschaosV1alpha1().ChaosEngines(exporterSpec.AppNS).Get(exporterSpec.ChaosEngine, metav1.GetOptions{})
 	if err != nil {
@@ -59,7 +54,16 @@ func GetLitmusChaosMetrics(config *rest.Config, exporterSpec ExporterSpec) (floa
 	}
 
 	// Set default values on the chaosResult map before populating w/ actual values
+	setChaosResultValue(clientSet, chaosExperimentList, exporterSpec)
 
+	chaosResult := calculateChaosResult(chaosResultMap)
+	fmt.Printf("%+v\n", chaosResult.StatusMap)
+	totalExpCount := float64(len(engine.Spec.Experiments))
+
+	return totalExpCount, chaosResult.TotalPassedExp, chaosResult.TotalFailedExp, chaosResult.StatusMap, nil
+}
+
+func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosExperimentList []string, exporterSpec ExporterSpec) {
 	for _, test := range chaosExperimentList {
 		chaosResultName := fmt.Sprintf("%s-%s", exporterSpec.ChaosEngine, test)
 		testResultDump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(exporterSpec.AppNS).Get(chaosResultName, metav1.GetOptions{})
@@ -68,17 +72,11 @@ func GetLitmusChaosMetrics(config *rest.Config, exporterSpec ExporterSpec) (floa
 				// lack of result cr indicates experiment not executed
 				chaosResultMap[test] = "not-executed"
 			}
-			return 0, 0, 0, nil, err
+			continue
 		}
 		result := testResultDump.Spec.ExperimentStatus.Verdict
 		chaosResultMap[test] = result
 	}
-
-	chaosResult := calculateChaosResult(chaosResultMap)
-	fmt.Printf("%+v\n", chaosResult.StatusMap)
-	totalExpCount := float64(len(engine.Spec.Experiments))
-
-	return totalExpCount, chaosResult.TotalPassedExp, chaosResult.TotalFailedExp, chaosResult.StatusMap, nil
 }
 
 // calculateChaosResult will calculate the number of pass and failed experiments

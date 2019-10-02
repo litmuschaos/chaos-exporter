@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/rest"
+	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 
 	"github.com/litmuschaos/chaos-exporter/pkg/version"
 )
@@ -17,6 +18,10 @@ func Exporter(config *rest.Config, exporterSpec ExporterSpec) {
 	k8sClientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		log.Info("Unable to create the kubernetes ClientSet")
+	}
+	litmusClientSet, err := clientV1alpha1.NewForConfig(config)
+	if err != nil {
+		log.Info("Unable to create the litmus ClientSet")
 	}
 	// Register the fixed (count) chaos metrics
 	prometheus.MustRegister(ExperimentsTotal)
@@ -36,7 +41,7 @@ func Exporter(config *rest.Config, exporterSpec ExporterSpec) {
 
 	for {
 		// Get the chaos metrics for the specified chaosengine
-		expTotal, passTotal, failTotal, expMap, err := GetLitmusChaosMetrics(config, exporterSpec)
+		expTotal, passTotal, failTotal, expMap, err := GetLitmusChaosMetrics(litmusClientSet, exporterSpec)
 		if err != nil {
 			log.Error("Unable to get metrics: ", err.Error())
 		}
