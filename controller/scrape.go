@@ -43,7 +43,6 @@ func statusConversion(expStatus string) (numeric float64) {
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec ExporterSpec) (float64, float64, float64, map[string]float64, error) {
-
 	engine, err := clientSet.LitmuschaosV1alpha1().ChaosEngines(exporterSpec.AppNS).Get(exporterSpec.ChaosEngine, metav1.GetOptions{})
 	if err != nil {
 		return 0, 0, 0, nil, err
@@ -63,6 +62,7 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec Exp
 	return totalExpCount, chaosResult.TotalPassedExp, chaosResult.TotalFailedExp, chaosResult.StatusMap, nil
 }
 
+// setChaosResultValue will populate the default value of chaos result
 func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosExperimentList []string, exporterSpec ExporterSpec) {
 	for _, test := range chaosExperimentList {
 		chaosResultName := fmt.Sprintf("%s-%s", exporterSpec.ChaosEngine, test)

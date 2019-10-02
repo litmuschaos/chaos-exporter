@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	)
+)
 
 var registeredResultMetrics []string
 
@@ -38,8 +38,18 @@ var (
 
 // ExporterSpec contains the exporter related specs
 type ExporterSpec struct {
-	ChaosEngine string
-	AppUUID string
-	AppNS string
+	ChaosEngine      string
+	AppUUID          string
+	AppNS            string
 	OpenebsNamespace string
+}
+
+type Version struct {
+	KubernetesVersion string
+	OpenebsVersion    string
+}
+
+type ExporterConfig struct {
+	Spec ExporterSpec
+	version Version
 }
