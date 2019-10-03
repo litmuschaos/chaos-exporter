@@ -61,3 +61,11 @@ type ChaosResultSpec struct {
 	ExporterSpec        ExporterSpec
 	ChaosExperimentList []string
 }
+
+// ChaosMetricsSpec contains the specs related to chaos metrics
+type ChaosMetricsSpec struct {
+	ExpTotal  float64
+	PassTotal float64
+	FailTotal float64
+	ExperimentList    map[string]float64
+}

@@ -11,7 +11,7 @@ var openebsLabel = "openebs.io/component-name=maya-apiserver"
 
 // GetOpenebsVersion function fetchs the OpenEBS version
 func GetOpenebsVersion(clientSet *kubernetes.Clientset, namespace string) (string, error) {
-	podList, err := clientSet.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: openebsLabel, Limit:1})
+	podList, err := clientSet.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: openebsLabel, Limit: 1})
 	if err != nil {
 		return "", fmt.Errorf("unable to find openebs/maya api-server %s", err)
 	}

@@ -26,7 +26,7 @@ func Exporter(config *rest.Config, exporterSpec ExporterSpec) {
 		log.Error(err)
 	}
 
-	spec := ExporterConfig{ Spec: exporterSpec, version: versions}
+	spec := ExporterConfig{Spec: exporterSpec, version: versions}
 	for {
 		generateChaosMetrics(spec, litmusClientSet)
 	}
@@ -42,13 +42,13 @@ func getVersion(clientSet *kubernetes.Clientset, exporterSpec ExporterSpec) (Ver
 	// This function gets the openebs version
 	v.OpenebsVersion, err = version.GetOpenebsVersion(clientSet, exporterSpec.OpenebsNamespace)
 	if err != nil {
-		return v , fmt.Errorf("unable to get OpenEBS Version %s: ", err)
+		return v, fmt.Errorf("unable to get OpenEBS Version %s: ", err)
 	}
 	return v, nil
 }
 
 // generateClientSets will generate clientSet for kubernetes and litmus
-func generateClientSets(config *rest.Config) (*kubernetes.Clientset, *clientV1alpha1.Clientset, error){
+func generateClientSets(config *rest.Config) (*kubernetes.Clientset, *clientV1alpha1.Clientset, error) {
 	k8sClientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to generate kubernetes clientSet %s: ", err)
@@ -83,19 +83,14 @@ func generateChaosMetrics(exporterConfig ExporterConfig, litmusClientSet *client
 	}
 
 	// Define, register & set the dynamically obtained chaos metrics (experiment state)
-	for index, verdict := range expMap {
-		sanitizedExpName := strings.Replace(index, "-", "_", -1)
-		var (
-			tmpExp = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-				Namespace: "c",
-				Subsystem: "exp",
-				Name:      sanitizedExpName,
-				Help:      "",
-			},
-				[]string{"app_uid", "engine_name", "kubernetes_version", "openebs_version"},
-			)
-		)
+	chaosMetricsSpec := ChaosMetricsSpec{ExpTotal: expTotal, PassTotal: passTotal, FailTotal: failTotal, ExperimentList: expMap,}
+	defineChaosMetrics(chaosMetricsSpec, exporterConfig)
+	time.Sleep(1000 * time.Millisecond)
+}
 
+func defineChaosMetrics(chaosMetricsSpec ChaosMetricsSpec, exporterConfig ExporterConfig) {
+	for index, verdict := range chaosMetricsSpec.ExperimentList {
+		sanitizedExpName, tmpExp := generatePrometheusGaugeVec(index)
 		if contains(registeredResultMetrics, sanitizedExpName) {
 			prometheus.Unregister(tmpExp)
 			prometheus.MustRegister(tmpExp)
@@ -107,9 +102,22 @@ func generateChaosMetrics(exporterConfig ExporterConfig, litmusClientSet *client
 		}
 
 		// Set the fixed chaos metrics
-		ExperimentsTotal.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(expTotal)
-		PassedExperiments.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(passTotal)
-		FailedExperiments.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(failTotal)
+		setFixedChaosMetrics(chaosMetricsSpec, exporterConfig)
 	}
-	time.Sleep(1000 * time.Millisecond)
+}
+
+func generatePrometheusGaugeVec(index string) (string, *prometheus.GaugeVec) {
+	sanitizedExpName := strings.Replace(index, "-", "_", -1)
+	var (
+		tmpExp = prometheus.NewGaugeVec(prometheus.GaugeOpts{Namespace: "c", Subsystem: "exp", Name: sanitizedExpName, Help: ""},
+			[]string{"app_uid", "engine_name", "kubernetes_version", "openebs_version"},
+		)
+	)
+	return sanitizedExpName, tmpExp
+}
+
+func setFixedChaosMetrics(chaosMetricsSpec ChaosMetricsSpec, exporterConfig ExporterConfig) {
+	ExperimentsTotal.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(chaosMetricsSpec.ExpTotal)
+	PassedExperiments.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(chaosMetricsSpec.PassTotal)
+	FailedExperiments.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(chaosMetricsSpec.FailTotal)
 }

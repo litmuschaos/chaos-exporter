@@ -66,9 +66,9 @@ func getExporterSpecs() (controller.ExporterSpec, error) {
 	}
 
 	exporterSpec := controller.ExporterSpec{
-		ChaosEngine: chaosEngine,
-		AppUUID: applicationUUID,
-		AppNS: getNamespaceEnv("APP_NAMESPACE", "default"),
+		ChaosEngine:      chaosEngine,
+		AppUUID:          applicationUUID,
+		AppNS:            getNamespaceEnv("APP_NAMESPACE", "default"),
 		OpenebsNamespace: getOpenebsEnv("OPENEBS_NAMESPACE", "openebs"),
 	}
 	return exporterSpec, nil

@@ -53,7 +53,7 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec Exp
 	}
 
 	// Set default values on the chaosResult map before populating w/ actual values
-	spec := ChaosResultSpec{ ExporterSpec: exporterSpec, ChaosExperimentList: chaosExperimentList }
+	spec := ChaosResultSpec{ExporterSpec: exporterSpec, ChaosExperimentList: chaosExperimentList}
 	setChaosResultValue(clientSet, spec)
 
 	chaosResult := calculateChaosResult(chaosResultMap)
