@@ -1,4 +1,5 @@
 # Litmus Chaos Exporter
+[![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-exporter?branch=master)](https://bettercodehub.com/)
 
 - This is a custom prometheus exporter to expose Litmus Chaos metrics. 
   To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
