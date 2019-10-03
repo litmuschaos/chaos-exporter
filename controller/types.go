@@ -52,6 +52,12 @@ type Version struct {
 
 // ExporterConfig contains the config for exporter function
 type ExporterConfig struct {
-	Spec ExporterSpec
+	Spec    ExporterSpec
 	version Version
+}
+
+// ChaosResultSpec contains the specs related to generate teh chaos result
+type ChaosResultSpec struct {
+	ExporterSpec        ExporterSpec
+	ChaosExperimentList []string
 }

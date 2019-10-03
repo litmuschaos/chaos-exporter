@@ -53,7 +53,8 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec Exp
 	}
 
 	// Set default values on the chaosResult map before populating w/ actual values
-	setChaosResultValue(clientSet, chaosExperimentList, exporterSpec)
+	spec := ChaosResultSpec{ ExporterSpec: exporterSpec, ChaosExperimentList: chaosExperimentList }
+	setChaosResultValue(clientSet, spec)
 
 	chaosResult := calculateChaosResult(chaosResultMap)
 	fmt.Printf("%+v\n", chaosResult.StatusMap)
@@ -63,10 +64,10 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec Exp
 }
 
 // setChaosResultValue will populate the default value of chaos result
-func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosExperimentList []string, exporterSpec ExporterSpec) {
-	for _, test := range chaosExperimentList {
-		chaosResultName := fmt.Sprintf("%s-%s", exporterSpec.ChaosEngine, test)
-		testResultDump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(exporterSpec.AppNS).Get(chaosResultName, metav1.GetOptions{})
+func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosResultSpec ChaosResultSpec) {
+	for _, test := range chaosResultSpec.ChaosExperimentList {
+		chaosResultName := fmt.Sprintf("%s-%s", chaosResultSpec.ExporterSpec.ChaosEngine, test)
+		testResultDump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(chaosResultSpec.ExporterSpec.AppNS).Get(chaosResultName, metav1.GetOptions{})
 		if err != nil {
 			if strings.Contains(err.Error(), "not found") {
 				// lack of result cr indicates experiment not executed
