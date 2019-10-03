@@ -25,7 +25,7 @@ var numericStatus = map[string]float64{
 	"pass":         3,
 }
 
-// ChaosExpResult...
+// ChaosExpResult contains the structure of Chaos Result
 type ChaosExpResult struct {
 	TotalExpCount  float64
 	TotalPassedExp float64

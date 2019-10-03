@@ -44,11 +44,13 @@ type ExporterSpec struct {
 	OpenebsNamespace string
 }
 
+// Version contains the version related information
 type Version struct {
 	KubernetesVersion string
 	OpenebsVersion    string
 }
 
+// ExporterConfig contains the config for exporter function
 type ExporterConfig struct {
 	Spec ExporterSpec
 	version Version

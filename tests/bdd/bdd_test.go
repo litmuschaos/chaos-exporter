@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"k8s.io/client-go/kubernetes"
 	"log"
 	"net/http"
 	"os"
@@ -106,7 +107,11 @@ var _ = Describe("BDD on chaos-exporter", func() {
 			}
 
 			By("Checking experiments metrics")
-			expTotal, passTotal, failTotal, expMap, err := controller.GetLitmusChaosMetrics(config, exporterSpec)
+			clientSet, err := clientV1alpha1.NewForConfig(config)
+			if err != nil {
+				fmt.Println(err)
+			}
+			expTotal, passTotal, failTotal, expMap, err := controller.GetLitmusChaosMetrics(clientSet, exporterSpec)
 			if err != nil {
 				Fail(err.Error()) // Unable to get metrics:
 			}
@@ -143,10 +148,13 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				}
 				fmt.Printf("%s\n", string(contents))
 
-				var k8sVersion string
-				var openEBSVersion string
-				k8sVersion, _ = version.GetKubernetesVersion(config)            // getting kubernetes version
-				openEBSVersion, _ = version.GetOpenebsVersion(config, "litmus") // getting openEBS Version
+				var k8sVersion, openEBSVersion string
+				k8sClientSet, err := kubernetes.NewForConfig(config)
+				if err != nil {
+					fmt.Printf("unable to generate kubernetes clientSet %s: ", err)
+				}
+				k8sVersion, _ = version.GetKubernetesVersion(k8sClientSet)            // getting kubernetes version
+				openEBSVersion, _ = version.GetOpenebsVersion(k8sClientSet, "litmus") // getting openEBS Version
 
 				var tmpStr = "{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"}"
 

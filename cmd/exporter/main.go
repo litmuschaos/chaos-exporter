@@ -101,7 +101,7 @@ func main() {
 	}
 	exporterSpec, err := getExporterSpecs()
 	if err != nil {
-		log.Fatalf("Error: ", err)
+		log.Fatal("Error: ", err)
 	}
 	// Trigger the chaos metrics collection
 	go controller.Exporter(config, exporterSpec)
