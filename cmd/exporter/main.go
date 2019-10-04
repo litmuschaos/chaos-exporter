@@ -34,7 +34,7 @@ import (
 )
 
 // Declare general variables (cluster ops, error handling, misc)
-var kubeconfig string
+var kubeconfig *string
 var config *rest.Config
 var err error
 
@@ -65,7 +65,7 @@ func getExporterSpecs() (controller.ExporterSpec, error) {
 		return controller.ExporterSpec{}, fmt.Errorf("please specify correct APP_UUID & CHAOSENGINE ENVs")
 	}
 
-	exporterSpec := controller.ExporterSpec{
+	exporterSpec := controller.ExporterSpec {
 		ChaosEngine:      chaosEngine,
 		AppUUID:          applicationUUID,
 		AppNS:            getNamespaceEnv("APP_NAMESPACE", "default"),
@@ -76,16 +76,17 @@ func getExporterSpecs() (controller.ExporterSpec, error) {
 
 // getKubeConfig setup the config for access cluster resource
 func getKubeConfig() (*rest.Config, error) {
+	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	flag.Parse()
 	// Use in-cluster config if kubeconfig file not available
-	if kubeconfig == "" {
+	if *kubeconfig == "" {
 		config, err = rest.InClusterConfig()
 		if err != nil {
 			return config, err
 		}
 	}
-	log.Info("using configuration from: ", kubeconfig)
-	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to the kubeconfig file")
-	config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	log.Info("using configuration from: ", *kubeconfig)
+	config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		return config, err
 	}
@@ -93,7 +94,6 @@ func getKubeConfig() (*rest.Config, error) {
 }
 
 func main() {
-	flag.Parse()
 	// Setting up kubeconfig
 	config, err := getKubeConfig()
 	if err != nil {
