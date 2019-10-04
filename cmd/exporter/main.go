@@ -78,14 +78,13 @@ func getExporterSpecs() (controller.ExporterSpec, error) {
 func getKubeConfig() (*rest.Config, error) {
 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	flag.Parse()
-	// Use in-cluster config if kubeconfig file not available
+	// Use in-cluster config if kubeconfig path is specified
 	if *kubeconfig == "" {
 		config, err = rest.InClusterConfig()
 		if err != nil {
 			return config, err
 		}
 	}
-	log.Info("using configuration from: ", *kubeconfig)
 	config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
 		return config, err

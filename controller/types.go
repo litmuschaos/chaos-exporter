@@ -69,3 +69,10 @@ type ChaosMetricsSpec struct {
 	FailTotal float64
 	ExperimentList    map[string]float64
 }
+
+// ChaosExpResult contains the structure of Chaos Result
+type ChaosExpResult struct {
+	TotalExpCount  float64
+	TotalPassedExp float64
+	TotalFailedExp float64
+}

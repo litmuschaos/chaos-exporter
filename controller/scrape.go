@@ -14,23 +14,12 @@ import (
 // Holds list of experiments in a chaosengine
 var chaosExperimentList []string
 
-// Holds a map of experiment: result
-var chaosResultMap map[string]string
-
 // Holds a lookup of result: numericValue
 var numericStatus = map[string]float64{
 	"not-executed": 0,
 	"running":      1,
 	"fail":         2,
 	"pass":         3,
-}
-
-// ChaosExpResult contains the structure of Chaos Result
-type ChaosExpResult struct {
-	TotalExpCount  float64
-	TotalPassedExp float64
-	TotalFailedExp float64
-	StatusMap      map[string]float64
 }
 
 // Utility fn to return numeric value for a result
@@ -54,17 +43,18 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec Exp
 
 	// Set default values on the chaosResult map before populating w/ actual values
 	spec := ChaosResultSpec{ExporterSpec: exporterSpec, ChaosExperimentList: chaosExperimentList}
-	setChaosResultValue(clientSet, spec)
+	chaosResultMap := setChaosResultValue(clientSet, spec)
 
-	chaosResult := calculateChaosResult(chaosResultMap)
-	fmt.Printf("%+v\n", chaosResult.StatusMap)
+	chaosResult, StatusMap := calculateChaosResult(chaosResultMap)
+	fmt.Printf("%+v\n", StatusMap)
 	totalExpCount := float64(len(engine.Spec.Experiments))
 
-	return totalExpCount, chaosResult.TotalPassedExp, chaosResult.TotalFailedExp, chaosResult.StatusMap, nil
+	return totalExpCount, chaosResult.TotalPassedExp, chaosResult.TotalFailedExp, StatusMap, nil
 }
 
-// setChaosResultValue will populate the default value of chaos result
-func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosResultSpec ChaosResultSpec) {
+//setChaosResultValue will populate the default value of chaos result
+func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosResultSpec ChaosResultSpec) map[string]string {
+	chaosResultMap := make(map[string]string)
 	for _, test := range chaosResultSpec.ChaosExperimentList {
 		chaosResultName := fmt.Sprintf("%s-%s", chaosResultSpec.ExporterSpec.ChaosEngine, test)
 		testResultDump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(chaosResultSpec.ExporterSpec.AppNS).Get(chaosResultName, metav1.GetOptions{})
@@ -75,23 +65,23 @@ func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosResultSpec Ch
 			}
 			continue
 		}
-		result := testResultDump.Spec.ExperimentStatus.Verdict
-		chaosResultMap[test] = result
+		chaosResultMap[test] = testResultDump.Spec.ExperimentStatus.Verdict
 	}
+	return chaosResultMap
 }
 
 // calculateChaosResult will calculate the number of pass and failed experiments
-func calculateChaosResult(chaosResult map[string]string) ChaosExpResult {
+func calculateChaosResult(chaosResult map[string]string) (ChaosExpResult, map[string]float64) {
 	var cr ChaosExpResult
-
+	StatusMap := make(map[string]float64)
 	for index, status := range chaosResult {
 		if status == "pass" {
 			cr.TotalPassedExp++
 		} else if status == "fail" {
 			cr.TotalFailedExp++
 		}
-		cr.StatusMap[index] = statusConversion(status)
+		StatusMap[index] = statusConversion(status)
 	}
 
-	return cr
+	return cr, StatusMap
 }

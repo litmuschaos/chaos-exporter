@@ -25,7 +25,8 @@ func Exporter(config *rest.Config, exporterSpec ExporterSpec) {
 	if err != nil {
 		log.Error(err)
 	}
-
+	// Register the fixed (count) chaos metrics
+	registerFixedMetrics()
 	spec := ExporterConfig{Spec: exporterSpec, version: versions}
 	for {
 		generateChaosMetrics(spec, litmusClientSet)
@@ -71,10 +72,6 @@ func contains(l []string, e string) bool {
 }
 
 func generateChaosMetrics(exporterConfig ExporterConfig, litmusClientSet *clientV1alpha1.Clientset) {
-	// Register the fixed (count) chaos metrics
-	prometheus.MustRegister(ExperimentsTotal)
-	prometheus.MustRegister(PassedExperiments)
-	prometheus.MustRegister(FailedExperiments)
 
 	// Get the chaos metrics for the specified chaosengine
 	expTotal, passTotal, failTotal, expMap, err := GetLitmusChaosMetrics(litmusClientSet, exporterConfig.Spec)
@@ -120,4 +117,10 @@ func setFixedChaosMetrics(chaosMetricsSpec ChaosMetricsSpec, exporterConfig Expo
 	ExperimentsTotal.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(chaosMetricsSpec.ExpTotal)
 	PassedExperiments.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(chaosMetricsSpec.PassTotal)
 	FailedExperiments.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(chaosMetricsSpec.FailTotal)
+}
+
+func registerFixedMetrics() {
+	prometheus.MustRegister(ExperimentsTotal)
+	prometheus.MustRegister(PassedExperiments)
+	prometheus.MustRegister(FailedExperiments)
 }
