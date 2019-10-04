@@ -80,7 +80,7 @@ func generateChaosMetrics(exporterConfig ExporterConfig, litmusClientSet *client
 	}
 
 	// Define, register & set the dynamically obtained chaos metrics (experiment state)
-	chaosMetricsSpec := ChaosMetricsSpec{ExpTotal: expTotal, PassTotal: passTotal, FailTotal: failTotal, ExperimentList: expMap,}
+	chaosMetricsSpec := ChaosMetricsSpec{ExpTotal: expTotal, PassTotal: passTotal, FailTotal: failTotal, ExperimentList: expMap}
 	defineChaosMetrics(chaosMetricsSpec, exporterConfig)
 	time.Sleep(1000 * time.Millisecond)
 }

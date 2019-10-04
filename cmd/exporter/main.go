@@ -38,7 +38,7 @@ var kubeconfig *string
 var config *rest.Config
 var err error
 
-// getnamespaceEnv checks whether an ENV variable has been set, else sets a default value
+// getNamespaceEnv checks whether an ENV variable has been set, else sets a default value
 func getNamespaceEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok {
 		return value
@@ -65,7 +65,7 @@ func getExporterSpecs() (controller.ExporterSpec, error) {
 		return controller.ExporterSpec{}, fmt.Errorf("please specify correct APP_UUID & CHAOSENGINE ENVs")
 	}
 
-	exporterSpec := controller.ExporterSpec {
+	exporterSpec := controller.ExporterSpec{
 		ChaosEngine:      chaosEngine,
 		AppUUID:          applicationUUID,
 		AppNS:            getNamespaceEnv("APP_NAMESPACE", "default"),

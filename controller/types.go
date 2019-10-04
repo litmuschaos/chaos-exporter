@@ -64,10 +64,10 @@ type ChaosResultSpec struct {
 
 // ChaosMetricsSpec contains the specs related to chaos metrics
 type ChaosMetricsSpec struct {
-	ExpTotal  float64
-	PassTotal float64
-	FailTotal float64
-	ExperimentList    map[string]float64
+	ExpTotal       float64
+	PassTotal      float64
+	FailTotal      float64
+	ExperimentList map[string]float64
 }
 
 // ChaosExpResult contains the structure of Chaos Result
