@@ -9,19 +9,22 @@ import (
 )
 
 var openebsVersion = "N/A"
- 
+
+// Check , common function to log message in case of error
 func Check(err error, msg string) {
 	if err != nil {
 		log.Info(msg)
 	}
 }
 
+// GetClientSet fetches the clientset , given a configuration
 func GetClientSet(cfg *rest.Config) (*kubernetes.Clientset, error) {
 	clientSet, err := kubernetes.NewForConfig(cfg)
 	Check(err, "Unable to create the required ClientSet")
 	return clientSet, err
 }
 
+// ObtainList fetches the list of pods
 func ObtainList(clientSet *kubernetes.Clientset, namespace string) (*v1.PodList, error) {
 	list, err := clientSet.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: "openebs.io/component-name=maya-apiserver",
@@ -31,6 +34,7 @@ func ObtainList(clientSet *kubernetes.Clientset, namespace string) (*v1.PodList,
 	return list, err
 }
 
+// CheckIfEmptyList checks if the obtained pod list is empty
 func CheckIfEmptyList(list *v1.PodList) bool {
 	if len(list.Items) == 0 {
 		log.Info("No resources with labels 'openebs.io/component-name=maya-apiserver' found")
