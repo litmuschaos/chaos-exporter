@@ -9,7 +9,7 @@ import (
 )
 
 var openebsVersion = "N/A"
-
+ 
 func Check(err error, msg string) {
 	if err != nil {
 		log.Info(msg)
@@ -41,13 +41,15 @@ func CheckIfEmptyList(list *v1.PodList) bool {
 
 // GetOpenebsVersion function fetchs the OpenEBS version
 func GetOpenebsVersion(cfg *rest.Config, namespace string) (string, error) {
-	if clientSet, err := GetClientSet(cfg); err != nil {
+	clientSet, err := GetClientSet(cfg)
+	if err != nil {
 		return openebsVersion, err
 	}
-	if list, err := ObtainList(clientSet, namespace); err != nil {
+	list, err := ObtainList(clientSet, namespace)
+	if err != nil {
 		return openebsVersion, err
 	}
-	if ok := CheckIfEmptyList(list); ok {
+	if CheckIfEmptyList(list) {
 		return openebsVersion, err
 	}
 	for _, v := range list.Items {
