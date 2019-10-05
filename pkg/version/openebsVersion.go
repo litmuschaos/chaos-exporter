@@ -2,9 +2,9 @@ package version
 
 import (
 	log "github.com/Sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -17,9 +17,9 @@ func Check(err error, msg string) {
 }
 
 func GetClientSet(cfg *rest.Config) (*kubernetes.Clientset, error) {
-  clientSet, err := kubernetes.NewForConfig(cfg)
+	clientSet, err := kubernetes.NewForConfig(cfg)
 	Check(err, "Unable to create the required ClientSet")
-  return clientSet, err
+	return clientSet, err
 }
 
 func ObtainList(clientSet *kubernetes.Clientset, namespace string) (*v1.PodList, error) {
@@ -31,7 +31,7 @@ func ObtainList(clientSet *kubernetes.Clientset, namespace string) (*v1.PodList,
 	return list, err
 }
 
-func CheckIfEmptyList(list *v1.PodList) bool{
+func CheckIfEmptyList(list *v1.PodList) bool {
 	if len(list.Items) == 0 {
 		log.Info("No resources with labels 'openebs.io/component-name=maya-apiserver' found")
 		return true
@@ -41,20 +41,17 @@ func CheckIfEmptyList(list *v1.PodList) bool{
 
 // GetOpenebsVersion function fetchs the OpenEBS version
 func GetOpenebsVersion(cfg *rest.Config, namespace string) (string, error) {
-	clientSet, err := GetClientSet(cfg)
-	if err != nil {
+	if clientSet, err := GetClientSet(cfg); err != nil {
 		return openebsVersion, err
 	}
-	list, err := ObtainList(clientSet, namespace)
-	if err != nil {
-		return  openebsVersion, err
+	if list, err := ObtainList(clientSet, namespace); err != nil {
+		return openebsVersion, err
 	}
-	if (CheckIfEmptyList(list)) {
+	if ok := CheckIfEmptyList(list); ok {
 		return openebsVersion, err
 	}
 	for _, v := range list.Items {
 		openebsVersion = v.GetLabels()["openebs.io/version"]
 	}
 	return openebsVersion, err
-
 }
