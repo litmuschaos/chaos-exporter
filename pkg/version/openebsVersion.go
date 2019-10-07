@@ -21,10 +21,7 @@ func ObtainList(clientSet *kubernetes.Clientset, namespace string) (*v1.PodList,
 
 // CheckIfEmptyList checks if the obtained pod list is empty
 func CheckIfEmptyList(list *v1.PodList) bool {
-	if len(list.Items) == 0 {
-		return true
-	}
-	return false
+	return len(list.Items) == 0
 }
 
 // GetOpenebsVersion function fetchs the OpenEBS version
