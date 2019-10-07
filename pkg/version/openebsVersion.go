@@ -5,7 +5,6 @@ import (
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 var openebsVersion = "N/A"
@@ -56,7 +55,7 @@ func GetOpenebsVersion(cfg *rest.Config, namespace string) (string, error) {
 	if CheckIfEmptyList(list) {
 		return openebsVersion, err
 	}
-	for _, v := range list.Items {
+	for _, v := range podList.Items {
 		openebsVersion = v.GetLabels()["openebs.io/version"]
 	}
 	return openebsVersion, err
