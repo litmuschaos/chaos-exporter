@@ -55,7 +55,7 @@ func GetOpenebsVersion(cfg *rest.Config, namespace string) (string, error) {
 	if CheckIfEmptyList(list) {
 		return openebsVersion, err
 	}
-	for _, v := range podList.Items {
+	for _, v := range list.Items {
 		openebsVersion = v.GetLabels()["openebs.io/version"]
 	}
 	return openebsVersion, err
