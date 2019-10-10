@@ -6,11 +6,6 @@ import (
   "os"
 )
 
-// TestChaosExporter is a sample test function
-func TestChaosExporter(t *testing.T) {
-  fmt.Println("..Test Chaos Exporter..")
-}
-
 func TestGetOpenebsEnv(t *testing.T) {
   tests := map[string]struct {
     before            func()  // Set "OPENEBS_NAMESPACE" Environment Variable
