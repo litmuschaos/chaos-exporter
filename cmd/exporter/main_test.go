@@ -12,35 +12,42 @@ func TestChaosExporter(t *testing.T) {
 }
 
 func TestGetOpenebsEnv(t *testing.T) {
-  // Set Enviroment variable
-  os.Setenv("_UTEST_OPENEBS", "utestopenebs")
-
   tests := map[string]struct {
-    inputkey          string
-    fallbackvalue     string
-    returnvalue       string
+    before            func()  // Set "OPENEBS_NAMESPACE" Environment Variable
+    after             func()  // Unset "OPENEBS_NAMESPACE" Environment Variable
+    inputKey          string  // Env Variable to get
+    fallbackValue     string  // return value, InCase the Env Variable is Not Available/Not set
+    returnValue       string  // Value of Env Variable
   }{
     "Test Positive-1":{
-      inputkey:       "_UTEST_OPENEBS", 
-      fallbackvalue:  "N/A",
-      returnvalue:    "utestopenebs",
+      before:         func (){
+                        os.Setenv("OPENEBS_NAMESPACE", "openebs")
+                      },
+      after:          func () {
+                        os.Unsetenv("OPENEBS_NAMESPACE")
+                      },
+      inputKey:       "OPENEBS_NAMESPACE",
+      fallbackValue:  "N/A",
+      returnValue:    "openebs",
     },
     "Test Negative-1":{
-      inputkey:       "_RUTEST_OPENEBS", 
-      fallbackvalue:  "rutest_openebs",
-      returnvalue:    "rutest_openebs",
+      before:         func () { },
+      after:          func () { },
+      inputKey:       "OPENEBS_NAMESPACE",
+      fallbackValue:  "N/A",
+      returnValue:    "N/A",
     },
   }
 
   for name, mock := range tests {
     name, mock := name, mock
     t.Run(name, func(t *testing.T){
-      actualresult := getOpenebsEnv(mock.inputkey, mock.fallbackvalue)
-      if mock.returnvalue != actualresult {
-        t.Fatalf("Test %q failed: expected value=%q, actual value=%q ", name, mock.returnvalue, actualresult)
+      mock.before()
+      actualresult := getOpenebsEnv(mock.inputKey, mock.fallbackValue)
+      if mock.returnValue != actualresult {
+        t.Fatalf("Test %q failed: expected value=%q, actual value=%q ", name, mock.returnValue, actualresult)
       }
+      mock.after()
     })
-  //Unset the Environment variable used for unit test
-  os.Unsetenv("_UTEST_OPENEBS")
   }
 }
