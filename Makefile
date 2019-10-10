@@ -65,7 +65,7 @@ test:
 	@echo "------------------"
 	@echo "--> Run Go Test"
 	@echo "------------------"
-	@go test ./... -v 
+	@go test ./... -v -count=1
 
 .PHONY: dockerops
 dockerops: 
@@ -84,5 +84,5 @@ bdddeps:
 	@echo "------------------"
 	@go get -u github.com/onsi/ginkgo
 	@go get -u github.com/onsi/gomega 
-	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/crds/chaosengine_crd.yaml
+	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/chaos_crds.yaml
 	kubectl create ns litmus
