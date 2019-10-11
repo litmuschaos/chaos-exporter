@@ -10,10 +10,10 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -138,7 +138,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				k8sVersion, _ = version.GetKubernetesVersion(k8sClientSet)             // getting kubernetes version
 				openEBSVersion, _ = version.GetOpenebsVersion(k8sClientSet, "openebs") // getting openEBS Version
 
-				var tmpStr= "{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"}"
+				var tmpStr = "{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"}"
 
 				By("Should be matched with total_experiments regx")
 				Expect(string(metrics)).Should(ContainSubstring("c_engine_experiment_count" + tmpStr + " 2"))
