@@ -496,7 +496,7 @@ message ConfigMapKeySelector {
   // The key to select.
   optional string key = 2;
 
-  // Specify whether the ConfigMap or it's key must be defined
+  // Specify whether the ConfigMap or its key must be defined
   // +optional
   optional bool optional = 3;
 }
@@ -556,7 +556,7 @@ message ConfigMapProjection {
   // +optional
   repeated KeyToPath items = 2;
 
-  // Specify whether the ConfigMap or it's keys must be defined
+  // Specify whether the ConfigMap or its keys must be defined
   // +optional
   optional bool optional = 4;
 }
@@ -588,7 +588,7 @@ message ConfigMapVolumeSource {
   // +optional
   optional int32 defaultMode = 3;
 
-  // Specify whether the ConfigMap or it's keys must be defined
+  // Specify whether the ConfigMap or its keys must be defined
   // +optional
   optional bool optional = 4;
 }
@@ -3208,6 +3208,13 @@ message PodSpec {
   // Optional: Defaults to true.
   // +optional
   optional bool enableServiceLinks = 30;
+
+  // PreemptionPolicy is the Policy for preempting pods with lower priority.
+  // One of Never, PreemptLowerPriority.
+  // Defaults to PreemptLowerPriority if unset.
+  // This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
+  // +optional
+  optional string preemptionPolicy = 31;
 }
 
 // PodStatus represents information about the status of a pod. Status may trail the actual
@@ -3986,7 +3993,7 @@ message SecretKeySelector {
   // The key of the secret to select from.  Must be a valid secret key.
   optional string key = 2;
 
-  // Specify whether the Secret or it's key must be defined
+  // Specify whether the Secret or its key must be defined
   // +optional
   optional bool optional = 3;
 }
@@ -4068,7 +4075,7 @@ message SecretVolumeSource {
   // +optional
   optional int32 defaultMode = 3;
 
-  // Specify whether the Secret or it's keys must be defined
+  // Specify whether the Secret or its keys must be defined
   // +optional
   optional bool optional = 4;
 }
@@ -4863,5 +4870,16 @@ message WeightedPodAffinityTerm {
 
 // WindowsSecurityContextOptions contain Windows-specific options and credentials.
 message WindowsSecurityContextOptions {
+  // GMSACredentialSpecName is the name of the GMSA credential spec to use.
+  // This field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag.
+  // +optional
+  optional string gmsaCredentialSpecName = 1;
+
+  // GMSACredentialSpec is where the GMSA admission webhook
+  // (https://github.com/kubernetes-sigs/windows-gmsa) inlines the contents of the
+  // GMSA credential spec named by the GMSACredentialSpecName field.
+  // This field is alpha-level and is only honored by servers that enable the WindowsGMSA feature flag.
+  // +optional
+  optional string gmsaCredentialSpec = 2;
 }
 
