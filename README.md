@@ -1,4 +1,5 @@
 # Litmus Chaos Exporter
+[![BUILD STATUS](https://travis-ci.org/litmuschaos/chaos-exporter.svg?branch=master)](https://travis-ci.org/litmuschaos/chaos-exporter)
 [![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-exporter?branch=master)](https://bettercodehub.com/)
 
 - This is a custom prometheus exporter to expose Litmus Chaos metrics. 
@@ -68,4 +69,3 @@ c_exp_engine_nginx_container_kill{app_uid="3f2092f8-6400-11e9-905f-42010a800131"
 # TYPE c_exp_engine_nginx_pod_failure gauge
 c_exp_engine_nginx_pod_failure{app_uid="3f2092f8-6400-11e9-905f-42010a800131"} 3
 ```
-
