@@ -16,11 +16,11 @@ services:
 language: go
 go:
   - 1.13.1
-
 addons:
   apt:
     update: true
-
+notifications:
+  slack: mayadata-team:rDo7WLKnsSGMSdMFd2USUJHw
 before_script:
   # Download kubectl, which is a requirement for using minikube.
   - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.13.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
