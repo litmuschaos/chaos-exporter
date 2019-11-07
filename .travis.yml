@@ -36,11 +36,11 @@ before_script:
 script:
   # Installing Go Dependencies
   - make godeps
-  # Build
+  # bdd testing dependencies - ginkgo and gomega
   - make bdddeps
   # Running all go tests
   - make test
-  # bdd testing dependencies - ginkgo and gomega
+  # Build
   - make build
 
 after_success:
