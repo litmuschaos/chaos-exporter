@@ -36,10 +36,12 @@ before_script:
 script:
   # Installing Go Dependencies
   - make godeps
-  # bdd testing dependencies - ginkgo and gomega 
+  # bdd testing dependencies - ginkgo and gomega
   - make bdddeps
   # Running all go tests
   - make test
+  # Build
+  - make build
 
 after_success:
   - sudo minikube delete
