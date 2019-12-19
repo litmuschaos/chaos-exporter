@@ -1,6 +1,7 @@
 # Litmus Chaos Exporter
 [![BUILD STATUS](https://travis-ci.org/litmuschaos/chaos-exporter.svg?branch=master)](https://travis-ci.org/litmuschaos/chaos-exporter)
 [![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-exporter?branch=master)](https://bettercodehub.com/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/litmuschaos/chaos-exporter)](https://goreportcard.com/report/github.com/litmuschaos/chaos-exporter)
 
 - This is a custom prometheus exporter to expose Litmus Chaos metrics. 
   To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
