@@ -1,0 +1,49 @@
+---
+stages:
+  - setup
+  - build
+  - cleanup
+  
+ClusterSetup:
+  stage: setup
+  tags:
+    - setup
+  script: 
+    - chmod 755 ./build/gitlab/stages/1-cluster-setup/gcp
+    - ./build/gitlab/stages/1-cluster-setup/gcp
+    
+  artifacts:
+    when: always
+    paths:
+      - .kube/
+          
+Build:
+
+  stage: build
+  tags: 
+    - build
+  script:
+
+    - cd ~/go/src/github.com/litmuschaos/chaos-exporter
+    - make godeps
+    # bdd testing dependencies - ginkgo and gomega
+    - make bdddeps
+    # Running all go tests
+    - make test
+    # Build
+    - make build
+
+ClusterCleanup:
+      
+  when: always
+  stage: cleanup
+  tags:
+    - cleanup
+  script: 
+    - chmod 755 ./build/gitlab/stages/2-cluster-cleanup/cluster-cleanup
+    - ./build/gitlab/stages/2-cluster-cleanup/cluster-cleanup
+    
+  artifacts:
+    when: always
+    paths:
+      - .kube/
