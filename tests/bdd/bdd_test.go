@@ -68,6 +68,7 @@ var _ = BeforeSuite(func() {
 			Appinfo: chaosEngineV1alpha1.ApplicationParams{
 				Appns:    "default",
 				Applabel: "app=nginx",
+				AppKind:  "deployment",
 			},
 			Experiments: []chaosEngineV1alpha1.ExperimentList{
 				{

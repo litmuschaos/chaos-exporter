@@ -1,3 +1,19 @@
+/*
+Copyright 2019 LitmusChaos Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package v1alpha1
 
 import (
@@ -11,12 +27,20 @@ import (
 type ChaosEngineSpec struct {
 	//Appinfo contains deployment details of AUT
 	Appinfo ApplicationParams `json:"appinfo"`
+	//ChaosType define wheather it is an infra chaos or app chaos
+	ChaosType string `json:"chaosType,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
+	//Components contains the image of runnner and monitor pod
+	Components ComponentParams `json:"components"`
 	//Consists of experiments executed by the engine
 	Experiments []ExperimentList `json:"experiments"`
 	//Monitor Enable Status
 	Monitoring bool `json:"monitoring,omitempty"`
+	//JobCleanUpPolicy decides to retain or delete the jobs
+	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
+	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
+	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
@@ -34,6 +58,30 @@ type ApplicationParams struct {
 	Appns string `json:"appns"`
 	//Unique label of the AUT
 	Applabel string `json:"applabel"`
+	//kind of application
+	AppKind string `json:"appkind"`
+}
+
+// ComponentParams defines information about the runner and monitor image
+type ComponentParams struct {
+	//Contains informations of the monitor pod
+	Monitor MonitorInfo `json:"monitor"`
+	//Contains informations of the the runner pod
+	Runner RunnerInfo `json:"runner"`
+}
+
+// MonitorInfo defines the information of the monitor pod
+type MonitorInfo struct {
+	//Image of the monitor pod
+	Image string `json:"image"`
+}
+
+// RunnerInfo defines the information of the runnerinfo pod
+type RunnerInfo struct {
+	//Image of the runner pod
+	Image string `json:"image,omitempty"`
+	//Type of Executor
+	Type string `json:"type,omitempty"`
 }
 
 // ExperimentList defines information about chaos experiments defined in the chaos engine
@@ -50,7 +98,7 @@ type ExperimentAttributes struct {
 	//Execution priority of the chaos experiment
 	Rank uint32 `json:"rank"`
 	//Environment Varibles to override the default values in chaos-experiments
-	Components []ExperimentENV `json:"components"`
+	Components []ExperimentENV `json:"components,omitempty"`
 }
 
 // ExperimentENV varibles to override the default values in chaosexperiment
