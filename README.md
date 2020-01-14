@@ -10,7 +10,7 @@
 - The exporter is tied to a Chaosengine custom resource, which, 
   in-turn is associated with a given application deployment.
 
-- The exporter is typically deployed as a to to the Litmus Experiment
+- The exporter is typically deployed as a sidecar to the Litmus Experiment
   Runner container in the engine-runner pod, but can be launched as a
   separate deployment as well. 
 
