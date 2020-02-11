@@ -27,8 +27,8 @@ import (
 type ChaosEngineSpec struct {
 	//Appinfo contains deployment details of AUT
 	Appinfo ApplicationParams `json:"appinfo"`
-	//ChaosType define wheather it is an infra chaos or app chaos
-	ChaosType string `json:"chaosType,omitempty"`
+	//AnnotationCheck defines whether annotation check is allowed or not. It can be true or false
+	AnnotationCheck string `json:"annotationCheck,omitempty"`
 	//ChaosServiceAccount is the SvcAcc specified for chaos runner pods
 	ChaosServiceAccount string `json:"chaosServiceAccount"`
 	//Components contains the image of runnner and monitor pod
@@ -41,6 +41,8 @@ type ChaosEngineSpec struct {
 	JobCleanUpPolicy string `json:"jobCleanUpPolicy,omitempty"`
 	//AuxiliaryAppInfo contains details of dependent applications (infra chaos)
 	AuxiliaryAppInfo string `json:"auxiliaryAppInfo,omitempty"`
+	//EngineStatus is a requirement for validation
+	EngineStatus string `json:"engineStatus"`
 }
 
 // ChaosEngineStatus defines the observed state of ChaosEngine
@@ -80,7 +82,7 @@ type MonitorInfo struct {
 type RunnerInfo struct {
 	//Image of the runner pod
 	Image string `json:"image,omitempty"`
-	//Type of Executor
+	//Type of runner
 	Type string `json:"type,omitempty"`
 }
 
@@ -98,7 +100,14 @@ type ExperimentAttributes struct {
 	//Execution priority of the chaos experiment
 	Rank uint32 `json:"rank"`
 	//Environment Varibles to override the default values in chaos-experiments
-	Components []ExperimentENV `json:"components,omitempty"`
+	Components ExperimentComponents `json:"components,omitempty"`
+}
+
+// ExperimentComponents contains ENV, Configmaps and Secrets
+type ExperimentComponents struct {
+	ENV        []ExperimentENV `json:"env,omitempty"`
+	ConfigMaps []ConfigMap     `json:"configMaps,omitempty"`
+	Secrets    []Secret        `json:"secrets,omitempty"`
 }
 
 // ExperimentENV varibles to override the default values in chaosexperiment

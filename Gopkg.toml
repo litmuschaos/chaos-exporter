@@ -53,6 +53,10 @@
   name = "k8s.io/api"
   version = "kubernetes-1.15.4"
 
+[[override]]
+  name = "github.com/litmuschaos/chaos-operator"
+  branch = "master"
+  
 [prune]
   go-tests = true
   unused-packages = true
