@@ -77,7 +77,7 @@ func getExporterSpecs() (controller.ExporterSpec, error) {
 	chaosEngine := os.Getenv("CHAOSENGINE")
 
 	// Validate availability of mandatory ENV
-	if chaosEngine == "" || applicationUUID == "" {
+	if chaosEngine == "" {
 		return controller.ExporterSpec{}, fmt.Errorf("please specify correct APP_UUID & CHAOSENGINE ENVs")
 	}
 
