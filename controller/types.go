@@ -20,6 +20,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	// StatusPassed define the pass value
+	StatusPassed = "Pass"
+	// StatusFailed define the Fail value
+	StatusFailed = "Fail"
+)
+
 var registeredResultMetrics []string
 
 // Declare the fixed chaos metrics. Dynamic (testStatus) metrics are defined in metrics()
