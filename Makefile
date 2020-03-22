@@ -86,3 +86,11 @@ bdddeps:
 	@go get -u github.com/onsi/gomega 
 	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/chaos_crds.yaml
 	kubectl create ns litmus
+
+.PHONY: trivy-security-check
+trivy-security-check:
+	@echo "------------------"
+	@echo "--> Trivy Security Check"
+	@echo "------------------"
+	trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/ansible-runner:ci
+	trivy --exit-code 1 --severity CRITICAL --no-progress litmuschaos/ansible-runner:ci
