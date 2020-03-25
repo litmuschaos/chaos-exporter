@@ -40,17 +40,16 @@ before_script:
   - sudo apt-get install trivy
 
 script:
-  # Installing Go Dependencies
-  - make godeps
-  # bdd testing dependencies - ginkgo and gomega
-  - make bdddeps
-  # Running all go tests
+  # Installing and configuring dependencies
+  - make deps
+  # Test
   - make test
-  # Running Trivy Security check
-  - make trivy-security-check
   # Build
   - make build
+  # Running Security check
+  - make security-checks
+
 
 after_success:
   - sudo minikube delete
-  - make dockerops
+  - make push
