@@ -7,7 +7,7 @@ HOME = $(shell echo $$HOME)
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 .PHONY: all
-all: format lint deps build test push 
+all: format lint deps build test security-checks push 
 
 .PHONY: help
 help:
