@@ -22,7 +22,9 @@ import (
 
 	// auth for gcp: optional
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
+
 	//"github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -81,7 +83,7 @@ func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosResultSpec Ch
 			}
 			continue
 		}
-		chaosResultMap[test] = testResultDump.Spec.ExperimentStatus.Verdict
+		chaosResultMap[test] = testResultDump.Status.ExperimentStatus.Verdict
 	}
 	return chaosResultMap
 }
@@ -91,9 +93,9 @@ func calculateChaosResult(chaosResult map[string]string) (ChaosExpResult, map[st
 	var cr ChaosExpResult
 	StatusMap := make(map[string]float64)
 	for index, status := range chaosResult {
-		if status == "pass" {
+		if status == StatusPassed {
 			cr.TotalPassedExp++
-		} else if status == "fail" {
+		} else if status == StatusFailed {
 			cr.TotalFailedExp++
 		}
 		StatusMap[index] = statusConversion(status)

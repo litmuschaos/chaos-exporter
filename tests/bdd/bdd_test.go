@@ -70,6 +70,10 @@ var _ = BeforeSuite(func() {
 				Applabel: "app=nginx",
 				AppKind:  "deployment",
 			},
+			ChaosServiceAccount: "litmus",
+			JobCleanUpPolicy:    "retain",
+			Monitoring:          true,
+			EngineState:         "active",
 			Experiments: []chaosEngineV1alpha1.ExperimentList{
 				{
 					Name: "container-kill",

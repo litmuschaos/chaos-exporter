@@ -33,7 +33,7 @@ const (
 
 func getFakeClientSetWithNamespaceAndPod() kubernetes.Interface {
 	cs := fake.NewSimpleClientset()
-	_,_ = cs.CoreV1().Namespaces().Create(
+	_, _ = cs.CoreV1().Namespaces().Create(
 		&v1.Namespace{
 			ObjectMeta: v12.ObjectMeta{
 				Name: nsName,
