@@ -7,7 +7,7 @@ HOME = $(shell echo $$HOME)
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 .PHONY: all
-all: format lint build test dockerops 
+all: format lint deps build test security-checks push 
 
 .PHONY: help
 help:
@@ -15,25 +15,6 @@ help:
 	@echo "Usage:-"
 	@echo "\tmake all   -- [default] builds the chaos exporter container"
 	@echo ""
-
-.PHONY: godeps
-godeps:
-	@echo ""
-	@echo "INFO:\tverifying dependencies for chaos exporter build ..."
-	@go get -u -v golang.org/x/lint/golint
-	@go get -u -v golang.org/x/tools/cmd/goimports
-	@go get -u -v github.com/golang/dep/cmd/dep
-
-_build_check_docker:
-	@if [ $(IS_DOCKER_INSTALLED) -eq 1 ]; \
-		then echo "" \
-		&& echo "ERROR:\tdocker is not installed. Please install it before build." \
-		&& echo "" \
-		&& exit 1; \
-		fi;
-
-.PHONY: deps
-deps: _build_check_docker godeps
 
 .PHONY: format
 format:
@@ -53,28 +34,23 @@ lint:
 	@echo "------------------"
 	@go vet $(PACKAGES)
 
-.PHONY: build  
-build:
-	@echo "------------------"
-	@echo "--> Build Chaos Exporter"
-	@echo "------------------"
-	@go build ./cmd/exporter 
+.PHONY: deps
+deps: _build_check_docker godeps bdddeps
 
-.PHONY: test
-test:
-	@echo "------------------"
-	@echo "--> Run Go Test"
-	@echo "------------------"
-	@go test ./... -v -count=1
+_build_check_docker:
+	@if [ $(IS_DOCKER_INSTALLED) -eq 1 ]; \
+		then echo "" \
+		&& echo "ERROR:\tdocker is not installed. Please install it before build." \
+		&& echo "" \
+		&& exit 1; \
+		fi;
 
-.PHONY: dockerops
-dockerops: 
-	@echo "------------------"
-	@echo "--> Build chaos-exporter image" 
-	@echo "------------------"
-	# Dockerfile available in the repo root
-	sudo docker build . -f Dockerfile -t litmuschaos/chaos-exporter:ci  
-	REPONAME="litmuschaos" IMGNAME="chaos-exporter" IMGTAG="ci" ./buildscripts/push
+godeps:
+	@echo ""
+	@echo "INFO:\tverifying dependencies for chaos exporter build ..."
+	@go get -u -v golang.org/x/lint/golint
+	@go get -u -v golang.org/x/tools/cmd/goimports
+	@go get -u -v github.com/golang/dep/cmd/dep
 
 .PHONY: bdddeps
 bdddeps:
@@ -86,3 +62,45 @@ bdddeps:
 	@go get -u github.com/onsi/gomega 
 	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/chaos_crds.yaml
 	kubectl create ns litmus
+
+.PHONY: build  
+build: go-build docker-build
+
+go-build:
+	@echo "------------------"
+	@echo "--> Build Chaos Exporter"
+	@echo "------------------"
+	@go build ./cmd/exporter 
+
+docker-build: 
+	@echo "------------------"
+	@echo "--> Build chaos-exporter image" 
+	@echo "------------------"
+	# Dockerfile available in the repo root
+	sudo docker build . -f Dockerfile -t litmuschaos/chaos-exporter:ci
+
+.PHONY: test
+test:
+	@echo "------------------"
+	@echo "--> Run Go Test"
+	@echo "------------------"
+	@go test ./... -v -count=1
+
+.PHONY: security-checks
+security-checks: trivy-security-check
+
+trivy-security-check:
+	@echo "------------------"
+	@echo "--> Trivy Security Check"
+	@echo "------------------"
+	trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-exporter:ci
+	trivy --exit-code 1 --severity CRITICAL --no-progress litmuschaos/chaos-exporter:ci
+
+.PHONY: push
+push: docker-Push
+
+docker-push:
+	@echo "------------------"
+	@echo "--> Push chaos-exporter image" 
+	@echo "------------------"
+	REPONAME="litmuschaos" IMGNAME="chaos-exporter" IMGTAG="ci" ./buildscripts/push

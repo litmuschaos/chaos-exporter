@@ -32,17 +32,24 @@ before_script:
   - "sudo chown -R travis: /home/travis/.minikube/"
   # Wait for Kubernetes to be up and ready.
   - JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
+  # Installing Trivy Deps
+  - sudo apt-get install wget apt-transport-https gnupg lsb-release
+  - wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+  - echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee -a /etc/apt/sources.list.d/trivy.list
+  - sudo apt-get update
+  - sudo apt-get install trivy
 
 script:
-  # Installing Go Dependencies
-  - make godeps
-  # bdd testing dependencies - ginkgo and gomega
-  - make bdddeps
-  # Running all go tests
+  # Installing and configuring dependencies
+  - make deps
+  # Test
   - make test
   # Build
   - make build
+  # Running Security check
+  - make security-checks
+
 
 after_success:
   - sudo minikube delete
-  - make dockerops
+  - make push
