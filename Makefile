@@ -93,8 +93,8 @@ trivy-security-check:
 	@echo "------------------"
 	@echo "--> Trivy Security Check"
 	@echo "------------------"
-	trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-exporter:ci
-	trivy --exit-code 1 --severity CRITICAL --no-progress litmuschaos/chaos-exporter:ci
+	./trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-exporter:ci
+	./trivy --exit-code 1 --severity CRITICAL --no-progress litmuschaos/chaos-exporter:ci
 
 .PHONY: push
 push: docker-Push
