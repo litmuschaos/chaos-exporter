@@ -31,66 +31,71 @@ var registeredResultMetrics []string
 
 // Declare the fixed chaos metrics. Dynamic (testStatus) metrics are defined in metrics()
 var (
-	ExperimentsTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "c",
+	EngineExperimentsTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "ChaosEngine",
 		Subsystem: "engine",
-		Name:      "experiment_count",
+		Name:      "engine_experiment_count",
 		Help:      "Total number of experiments executed by the chaos engine",
 	},
-		[]string{"app_uid", "engine_name", "kubernetes_version", "openebs_version"},
+		[]string{"engine_namespace", "engine_name"},
 	)
 
-	PassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "c",
+	EnginePassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "ChaosEngine",
 		Subsystem: "engine",
-		Name:      "passed_experiments",
-		Help:      "Total number of passed experiments",
+		Name:      "engine_passed_experiments",
+		Help:      "Total number of passed experiments by the chaos engine",
 	},
-		[]string{"app_uid", "engine_name", "kubernetes_version", "openebs_version"},
+		[]string{"engine_namespace", "engine_name"},
 	)
 
-	FailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "c",
+	EngineFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "ChaosEngine",
 		Subsystem: "engine",
-		Name:      "failed_experiments",
-		Help:      "Total number of failed experiments",
+		Name:      "engine_failed_experiments",
+		Help:      "Total number of failed experiments by the chaos engine",
 	},
-		[]string{"app_uid", "engine_name", "kubernetes_version", "openebs_version"},
+		[]string{"engine_namespace", "engine_name"},
+	)
+
+	ClusterExperimentsTotal = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "Cluster",
+		Subsystem: "Overall",
+		Name:      "cluster_experiment_count",
+		Help:      "Total number of experiments executed in the Cluster",
+	},
+		[]string{},
+	)
+
+	ClusterPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "Cluster",
+		Subsystem: "Overall",
+		Name:      "cluster_passed_experiments",
+		Help:      "Total number of passed experiments in the Cluster",
+	},
+		[]string{},
+	)
+
+	ClusterFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "Cluster",
+		Subsystem: "Overall",
+		Name:      "cluster_failed_experiments",
+		Help:      "Total number of failed experiments in the Cluster",
+	},
+		[]string{},
+	)
+
+	RunningExperiment = prometheus.NewGaugeVec(prometheus.GaugeOpts{Namespace: "c", Subsystem: "exp", Name: "RunningExperiment", Help: "Running Experiment with ChaosEngine Details"},
+		[]string{"engine_namespace", "engine_name", "experiment_name", "result_name"},
 	)
 )
 
-// ExporterSpec contains the exporter related specs
-type ExporterSpec struct {
-	ChaosEngine      string
-	AppUUID          string
-	AppNS            string
-	OpenebsNamespace string
-}
-
-// Version contains the version related information
-type Version struct {
-	KubernetesVersion string
-	OpenebsVersion    string
-}
-
-// ExporterConfig contains the config for exporter function
-type ExporterConfig struct {
-	Spec    ExporterSpec
-	version Version
-}
-
-// ChaosResultSpec contains the specs related to generate teh chaos result
-type ChaosResultSpec struct {
-	ExporterSpec        ExporterSpec
-	ChaosExperimentList []string
-}
-
 // ChaosMetricsSpec contains the specs related to chaos metrics
 type ChaosMetricsSpec struct {
-	ExpTotal       float64
-	PassTotal      float64
-	FailTotal      float64
-	ExperimentList map[string]float64
+	ExpTotal   float64
+	PassTotal  float64
+	FailTotal  float64
+	ResultList map[string]float64
 }
 
 // ChaosExpResult contains the structure of Chaos Result
@@ -98,4 +103,12 @@ type ChaosExpResult struct {
 	TotalExpCount  float64
 	TotalPassedExp float64
 	TotalFailedExp float64
+}
+
+type ChaosEngineDetail struct {
+	Name      string
+	Namespace string
+	TotalExp  float64
+	PassedExp float64
+	FailedExp float64
 }

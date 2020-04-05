@@ -18,12 +18,16 @@ package controller
 
 import (
 	"fmt"
-	"strings"
+	log "github.com/Sirupsen/logrus"
+	"time"
+	//"strings"
 
 	// auth for gcp: optional
 	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
+	//"github.com/prometheus/client_golang/prometheus"
 
 	//"github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,43 +53,80 @@ func statusConversion(expStatus string) (numeric float64) {
 }
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
-func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec ExporterSpec) (float64, float64, float64, map[string]float64, error) {
-	engine, err := clientSet.LitmuschaosV1alpha1().ChaosEngines(exporterSpec.AppNS).Get(exporterSpec.ChaosEngine, metav1.GetOptions{})
+func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
+	chaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
 	if err != nil {
-		return 0, 0, 0, nil, err
+		return err
 	}
-
-	for _, element := range engine.Spec.Experiments {
-		chaosExperimentList = append(chaosExperimentList, element.Name)
+	var total, pass, fail float64
+	total = 0
+	pass = 0
+	fail = 0
+	//var expResults ChaosExpResult
+	for _, chaosEngine := range chaosEngineList.Items {
+		totalEngine, passedEngine, failedEngine := getExperimentMetricsFromEngine(&chaosEngine)
+		log.Printf("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
+		var engineDetails ChaosEngineDetail
+		engineDetails.Name = chaosEngine.Name
+		engineDetails.Namespace = chaosEngine.Namespace
+		engineDetails.PassedExp = passedEngine
+		engineDetails.FailedExp = failedEngine
+		engineDetails.TotalExp = totalEngine
+		total += totalEngine
+		pass += passedEngine
+		fail += failedEngine
+		setEngineChaosMetrics(engineDetails)
 	}
+	setClusterChaosMetrics(total, pass, fail)
+	time.Sleep(1000 * time.Millisecond)
+	return nil
+	//var expResult ChaosExpResult
+	// for _, chaosengine := range chaosEngineList.Items {
+	// 	a, b, c, d, err := getExperimentMetricsFromChaosEngine(chaosEngine)
+	// }
+	// for _, element := range engine.Spec.Experiments {
+	// 	chaosExperimentList = append(chaosExperimentList, element.Name)
+	// }
 
 	// Set default values on the chaosResult map before populating w/ actual values
-	spec := ChaosResultSpec{ExporterSpec: exporterSpec, ChaosExperimentList: chaosExperimentList}
-	chaosResultMap := setChaosResultValue(clientSet, spec)
+	//spec := ChaosResultSpec{ExporterSpec: exporterSpec, ChaosExperimentList: chaosExperimentList}
+	//chaosResultMap := setChaosResultValue(clientSet, spec)
 
-	chaosResult, StatusMap := calculateChaosResult(chaosResultMap)
-	fmt.Printf("%+v\n", StatusMap)
-	totalExpCount := float64(len(engine.Spec.Experiments))
+	//chaosResult, StatusMap := calculateChaosResult(chaosResultMap)
+	//log.Printf("%+v\n", StatusMap)
+	//totalExpCount := float64(len(engine.Spec.Experiments))
 
-	return totalExpCount, chaosResult.TotalPassedExp, chaosResult.TotalFailedExp, StatusMap, nil
+	//return totalExpCount, chaosResult.TotalPassedExp, chaosResult.TotalFailedExp, StatusMap, nil
+}
+
+func setClusterChaosMetrics(total float64, pass float64, fail float64) {
+	ClusterPassedExperiments.WithLabelValues().Set(pass)
+	ClusterFailedExperiments.WithLabelValues().Set(fail)
+	ClusterExperimentsTotal.WithLabelValues().Set(total)
+}
+func setEngineChaosMetrics(engineDetails ChaosEngineDetail) {
+	EngineExperimentsTotal.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.TotalExp)
+	EnginePassedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.PassedExp)
+	EngineFailedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.FailedExp)
 }
 
 //setChaosResultValue will populate the default value of chaos result
-func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosResultSpec ChaosResultSpec) map[string]string {
-	chaosResultMap := make(map[string]string)
-	for _, test := range chaosResultSpec.ChaosExperimentList {
-		chaosResultName := fmt.Sprintf("%s-%s", chaosResultSpec.ExporterSpec.ChaosEngine, test)
-		testResultDump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(chaosResultSpec.ExporterSpec.AppNS).Get(chaosResultName, metav1.GetOptions{})
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				// lack of result cr indicates experiment not executed
-				chaosResultMap[test] = "not-executed"
-			}
-			continue
-		}
-		chaosResultMap[test] = testResultDump.Status.ExperimentStatus.Verdict
-	}
-	return chaosResultMap
+func setChaosResultValue(clientSet *clientV1alpha1.Clientset) map[string]string {
+	// chaosResultMap := make(map[string]string)
+	// for _, test := range chaosResultSpec.ChaosExperimentList {
+	// 	chaosResultName := log.Sprintf("%s-%s", chaosResultSpec.ExporterSpec.ChaosEngine, test)
+	// 	testResultDump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(chaosResultSpec.ExporterSpec.AppNS).Get(chaosResultName, metav1.GetOptions{})
+	// 	if err != nil {
+	// 		if strings.Contains(err.Error(), "not found") {
+	// 			// lack of result cr indicates experiment not executed
+	// 			chaosResultMap[test] = "not-executed"
+	// 		}
+	// 		continue"github.com/prometheus/client_golang/prometheus"
+	// 	}
+	// 	chaosResultMap[test] = testResultDump.Status.ExperimentStatus.Verdict
+	// }
+	// return chaosResultMap
+	return nil
 }
 
 // calculateChaosResult will calculate the number of pass and failed experiments
@@ -102,4 +143,43 @@ func calculateChaosResult(chaosResult map[string]string) (ChaosExpResult, map[st
 	}
 
 	return cr, StatusMap
+}
+
+func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine) (float64, float64, float64) {
+	var total, passed, failed float64
+	passed = 0
+	failed = 0
+	expStatusList := chaosEngine.Status.Experiments
+	total = float64(len(expStatusList))
+	for _, v := range expStatusList {
+		verdictFloat := getValueFromVerdict(v.Verdict)
+		if verdictFloat == 3 {
+			passed++
+		} else if verdictFloat == 2 {
+			failed++
+		} else if verdictFloat == 1 {
+			defineRunningExperimentMetric(chaosEngine.Name, chaosEngine.Namespace, v.Name)
+		}
+	}
+	return total, passed, failed
+
+}
+func defineRunningExperimentMetric(engineName string, engineNamespace string, experimentName string) {
+	log.Printf("Running Experiment Metrics: EnginaName: %v, EngineNamespace: %v, ExperimentName: %v", engineName, engineNamespace, experimentName)
+	//runningExpGauge := generateGaugeVecForRunningExperiment()
+	//prometheus.MustRegister(runningExpGauge)
+	RunningExperiment.WithLabelValues(engineNamespace, engineName, experimentName, fmt.Sprintf("%s-%s", engineName, experimentName)).Set(float64(1))
+
+}
+
+func getValueFromVerdict(verdict string) float64 {
+	if verdict == "Pass" || verdict == "pass" || verdict == "passed" || verdict == "Passed" {
+		return 3
+	} else if verdict == "Fail" || verdict == "Failed" || verdict == "failed" || verdict == "fail" {
+		return 2
+	} else if verdict == "Awaited" || verdict == "awaited" {
+		return 1
+	} else {
+		return 0
+	}
 }

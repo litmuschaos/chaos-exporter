@@ -77,7 +77,7 @@ docker-build:
 	@echo "--> Build chaos-exporter image" 
 	@echo "------------------"
 	# Dockerfile available in the repo root
-	sudo docker build . -f Dockerfile -t litmuschaos/chaos-exporter:ci
+	sudo docker build . -f Dockerfile -t rahulchheda1997/chaos-exporter:ci
 
 .PHONY: test
 test:
