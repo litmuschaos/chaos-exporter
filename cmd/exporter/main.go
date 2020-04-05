@@ -38,7 +38,6 @@ package main
 
 import (
 	"flag"
-	//"fmt"
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
@@ -70,26 +69,6 @@ func getOpenebsEnv(key, fallback string) string {
 	return fallback
 }
 
-// func getExporterSpecs() (controller.ExporterSpec, error) {
-// 	// Get app details & chaosengine name from ENV
-// 	// Add checks for default
-// 	applicationUUID := os.Getenv("APP_UUID")
-// 	chaosEngine := os.Getenv("CHAOSENGINE")
-
-// 	// Validate availability of mandatory ENV
-// 	if chaosEngine == "" {
-// 		return controller.ExporterSpec{}, fmt.Errorf("please specify correct APP_UUID & CHAOSENGINE ENVs")
-// 	}
-
-// 	exporterSpec := controller.ExporterSpec{
-// 		ChaosEngine:      chaosEngine,
-// 		AppUUID:          applicationUUID,
-// 		AppNS:            getNamespaceEnv("APP_NAMESPACE", "default"),
-// 		OpenebsNamespace: getOpenebsEnv("OPENEBS_NAMESPACE", "openebs"),
-// 	}
-// 	return exporterSpec, nil
-// }
-
 // getKubeConfig setup the config for access cluster resource
 func getKubeConfig() (*rest.Config, error) {
 	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
@@ -114,10 +93,6 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	// exporterSpec, err := getExporterSpecs()
-	// if err != nil {
-	// 	log.Fatal("Error: ", err)
-	// }
 	// Trigger the chaos metrics collection
 	go controller.Exporter(config)
 	//This section will start the HTTP server and expose metrics on the /metrics endpoint.

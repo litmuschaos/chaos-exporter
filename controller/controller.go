@@ -19,14 +19,12 @@ package controller
 import (
 	"fmt"
 	"strings"
-	//"time"
 
 	log "github.com/Sirupsen/logrus"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	//"github.com/litmuschaos/chaos-exporter/pkg/version"
 )
 
 // Exporter continuously collects the chaos metrics for a given chaosengine
@@ -37,35 +35,15 @@ func Exporter(config *rest.Config) {
 		log.Error(err)
 	}
 
-	// versions, err := getVersion(k8sClientSet, exporterSpec)
-	// if err != nil {
-	// 	log.Error(err)
-	// }
 	// Register the fixed (count) chaos metrics
 	log.Printf("Registering Fixed Metrics")
 	registerFixedMetrics()
 
 	log.Printf("Going into for loop")
-	//spec := ExporterConfig{Spec: exporterSpec, version: versions}
 	for {
 		GetLitmusChaosMetrics(litmusClientSet)
 	}
 }
-
-// func getVersion(clientSet *kubernetes.Clientset, exporterSpec ExporterSpec) (Version, error) {
-// 	var v Version
-// 	var err error
-// 	v.KubernetesVersion, err = version.GetKubernetesVersion(clientSet)
-// 	if err != nil {
-// 		return v, fmt.Errorf("unable to get Kubernetes Version %s: ", err)
-// 	}
-// 	// This function gets the openebs version
-// 	v.OpenebsVersion, err = version.GetOpenebsVersion(clientSet, exporterSpec.OpenebsNamespace)
-// 	if err != nil {
-// 		return v, fmt.Errorf("unable to get OpenEBS Version %s: ", err)
-// 	}
-// 	return v, nil
-// }
 
 // generateClientSets will generate clientSet for kubernetes and litmus
 func generateClientSets(config *rest.Config) (*kubernetes.Clientset, *clientV1alpha1.Clientset, error) {
@@ -80,54 +58,6 @@ func generateClientSets(config *rest.Config) (*kubernetes.Clientset, *clientV1al
 	return k8sClientSet, litmusClientSet, nil
 }
 
-// contains checks if the a string is already part of a list of strings
-func contains(l []string, e string) bool {
-	for _, i := range l {
-		if i == e {
-			return true
-		}
-	}
-	return false
-}
-
-func generateChaosMetrics(litmusClientSet *clientV1alpha1.Clientset) {
-
-	// Get the chaos metrics for the specified chaosengine
-	// var expTotal, passTotal, failTotal float64
-	// var expMap map[string]float64
-	// expTotal = 0
-	// passTotal = 0
-	// failTotal = 0
-	// expMap = nil
-	// expTotal, passTotal, failTotal, expMap, err := GetLitmusChaosMetrics(litmusClientSet)
-	// if err != nil {
-	// 	log.Error("Unable to get metrics: ", err.Error())
-	// }
-
-	// // Define, register & set the dynamically obtained chaos metrics (experiment state)
-	// chaosMetricsSpec := ChaosMetricsSpec{ExpTotal: expTotal, PassTotal: passTotal, FailTotal: failTotal, ExperimentList: expMap}
-	// defineChaosMetrics(chaosMetricsSpec, exporterConfig)
-	// time.Sleep(1000 * time.Millisecond)
-}
-
-// func defineChaosMetrics(chaosMetricsSpec ChaosMetricsSpec, exporterConfig ExporterConfig) {
-// 	for index, verdict := range chaosMetricsSpec.ExperimentList {
-// 		sanitizedExpName, tmpExp := generatePrometheusGaugeVec(index)
-// 		if contains(registeredResultMetrics, sanitizedExpName) {
-// 			prometheus.Unregister(tmpExp)
-// 			prometheus.MustRegister(tmpExp)
-// 			tmpExp.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(verdict)
-// 		} else {
-// 			prometheus.MustRegister(tmpExp)
-// 			tmpExp.WithLabelValues(exporterConfig.Spec.AppUUID, exporterConfig.Spec.ChaosEngine, exporterConfig.version.KubernetesVersion, exporterConfig.version.OpenebsVersion).Set(verdict)
-// 			registeredResultMetrics = append(registeredResultMetrics, sanitizedExpName)
-// 		}
-
-// 		// Set the fixed chaos metrics
-// 		setFixedChaosMetrics(chaosMetricsSpec, exporterConfig)
-// 	}
-// }
-
 func generatePrometheusGaugeVec(index string) (string, *prometheus.GaugeVec) {
 	sanitizedExpName := strings.Replace(index, "-", "_", -1)
 	var (
@@ -139,11 +69,11 @@ func generatePrometheusGaugeVec(index string) (string, *prometheus.GaugeVec) {
 }
 
 func registerFixedMetrics() {
-	prometheus.MustRegister(EngineExperimentsTotal)
+	prometheus.MustRegister(EngineTotalExperiments)
 	prometheus.MustRegister(EnginePassedExperiments)
 	prometheus.MustRegister(EngineFailedExperiments)
 	prometheus.MustRegister(RunningExperiment)
-	prometheus.MustRegister(ClusterExperimentsTotal)
+	prometheus.MustRegister(ClusterTotalExperiments)
 	prometheus.MustRegister(ClusterFailedExperiments)
 	prometheus.MustRegister(ClusterPassedExperiments)
 }
