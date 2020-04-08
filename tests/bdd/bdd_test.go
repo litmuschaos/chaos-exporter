@@ -31,11 +31,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/litmuschaos/chaos-exporter/controller"
-	"github.com/litmuschaos/chaos-exporter/pkg/version"
 )
 
 var kubeconfig = os.Getenv("HOME") + "/.kube/config"
@@ -79,7 +77,7 @@ var _ = BeforeSuite(func() {
 					Name: "container-kill",
 				},
 				{
-					Name: "pod-kill",
+					Name: "pod-delete",
 				},
 			},
 		},
@@ -108,19 +106,8 @@ var _ = Describe("BDD on chaos-exporter", func() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			expTotal, passTotal, failTotal, expMap, err := controller.GetLitmusChaosMetrics(clientSet, exporterSpec)
-			if err != nil {
-				Fail(err.Error()) // Unable to get metrics:
-			}
-
-			fmt.Println(expTotal, failTotal, passTotal, expMap)
-
-			//failed experiments should be 0
-			Expect(failTotal).To(Equal(float64(0)))
-			// passed experiments should be 0
-			Expect(passTotal).To(Equal(float64(0)))
-			// total experiment is 2 because we have mentioned it in the chaosengine spec
-			Expect(expTotal).To(Equal(float64(2)))
+			err := controller.GetLitmusChaosMetrics(clientSet, exporterSpec)
+			Expect(err).To(Benil())
 
 		})
 	})
@@ -151,13 +138,6 @@ var _ = Describe("BDD on chaos-exporter", func() {
 					os.Exit(1)
 				}
 				fmt.Printf("%s\n", string(metrics))
-				var k8sVersion, openEBSVersion string
-				k8sClientSet, err := kubernetes.NewForConfig(config)
-				if err != nil {
-					fmt.Printf("unable to generate kubernetes clientSet %s: ", err)
-				}
-				k8sVersion, _ = version.GetKubernetesVersion(k8sClientSet)             // getting kubernetes version
-				openEBSVersion, _ = version.GetOpenebsVersion(k8sClientSet, "openebs") // getting openEBS Version
 
 				var tmpStr = "{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"}"
 

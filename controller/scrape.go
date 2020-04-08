@@ -41,7 +41,8 @@ var numericStatus = map[string]float64{
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
-	chaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
+	allChaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
+	chaosEngineList := filterMonitoringEnabledEngines(allChaosEngineList)
 	if err != nil {
 		return err
 	}
@@ -85,14 +86,14 @@ func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine
 	failed = 0
 	expStatusList := chaosEngine.Status.Experiments
 	total = float64(len(expStatusList))
-	for _, v := range expStatusList {
+	for i, v := range expStatusList {
 		verdictFloat := getValueFromVerdict(v.Verdict)
 		if verdictFloat == 3 {
 			passed++
 		} else if verdictFloat == 2 {
 			failed++
 		} else if verdictFloat == 1 {
-			defineRunningExperimentMetric(chaosEngine.Name, chaosEngine.Namespace, v.Name)
+			defineRunningExperimentMetric(chaosEngine.Name, chaosEngine.Namespace, chaosEngine.Spec.Experiments[i].Name)
 		}
 	}
 	return total, passed, failed
@@ -114,4 +115,16 @@ func getValueFromVerdict(verdict string) float64 {
 	} else {
 		return 0
 	}
+}
+
+func filterMonitoringEnabledEngines(allEngineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
+	//var filtedEngine *litmuschaosv1alpha1.ChaosEngineList
+	engineList := allEngineList.Items
+	for i, v := range engineList {
+		if v.Spec.Monitoring != true {
+			engineList = append(engineList[:i], engineList[i+1:]...)
+		}
+	}
+	allEngineList.Items = engineList
+	return allEngineList
 }
