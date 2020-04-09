@@ -39,7 +39,6 @@ func Exporter(config *rest.Config) {
 	log.Printf("Registering Fixed Metrics")
 	registerFixedMetrics()
 
-	log.Printf("Going into for loop")
 	for {
 		GetLitmusChaosMetrics(litmusClientSet)
 	}

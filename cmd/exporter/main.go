@@ -38,12 +38,12 @@ package main
 
 import (
 	"flag"
+	"net/http"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"net/http"
-	"os"
 
 	"github.com/litmuschaos/chaos-exporter/controller"
 )
@@ -52,22 +52,6 @@ import (
 var kubeconfig *string
 var config *rest.Config
 var err error
-
-// getNamespaceEnv checks whether an ENV variable has been set, else sets a default value
-func getNamespaceEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-// get OpenEBS related environments
-func getOpenebsEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
 
 // getKubeConfig setup the config for access cluster resource
 func getKubeConfig() (*rest.Config, error) {

@@ -18,10 +18,12 @@ package controller
 
 import (
 	"fmt"
-	log "github.com/Sirupsen/logrus"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+
 	// auth for gcp: optional
-	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
@@ -42,6 +44,9 @@ var numericStatus = map[string]float64{
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 	allChaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
 	chaosEngineList := filterMonitoringEnabledEngines(allChaosEngineList)
 	if err != nil {
 		return err
