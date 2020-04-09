@@ -21,13 +21,12 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-
-	// auth for gcp: optional
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	// auth for gcp: optional
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 // Holds list of experiments in a chaosengine
