@@ -51,6 +51,15 @@ var (
 		[]string{"engine_namespace", "engine_name"},
 	)
 
+	EngineAwaitedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "chaosEngine",
+		Subsystem: "engine",
+		Name:      "engine_awaited_experiments",
+		Help:      "Total number of waiting experiments by the chaos engine",
+	},
+		[]string{"engine_namespace", "engine_name"},
+	)
+
 	ClusterTotalExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "cluster",
 		Subsystem: "overall",
@@ -78,7 +87,7 @@ var (
 		[]string{},
 	)
 
-	RunningExperiment = prometheus.NewGaugeVec(prometheus.GaugeOpts{Namespace: "c", Subsystem: "exp", Name: "RunningExperiment", Help: "Running Experiment with ChaosEngine Details"},
+	RunningExperiment = prometheus.NewGaugeVec(prometheus.GaugeOpts{Namespace: "cluster", Subsystem: "overall", Name: "RunningExperiment", Help: "Running Experiment with ChaosEngine Details"},
 		[]string{"engine_namespace", "engine_name", "experiment_name", "result_name"},
 	)
 )
@@ -99,9 +108,10 @@ type ChaosExpResult struct {
 }
 
 type ChaosEngineDetail struct {
-	Name      string
-	Namespace string
-	TotalExp  float64
-	PassedExp float64
-	FailedExp float64
+	Name       string
+	Namespace  string
+	TotalExp   float64
+	PassedExp  float64
+	FailedExp  float64
+	AwaitedExp float64
 }

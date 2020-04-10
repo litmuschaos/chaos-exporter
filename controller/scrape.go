@@ -18,6 +18,7 @@ package controller
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
@@ -55,14 +56,15 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 	pass = 0
 	fail = 0
 	for _, chaosEngine := range chaosEngineList.Items {
-		totalEngine, passedEngine, failedEngine := getExperimentMetricsFromEngine(&chaosEngine)
+		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
 		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
 		var engineDetails ChaosEngineDetail
 		engineDetails.Name = chaosEngine.Name
 		engineDetails.Namespace = chaosEngine.Namespace
+		engineDetails.TotalExp = totalEngine
 		engineDetails.PassedExp = passedEngine
 		engineDetails.FailedExp = failedEngine
-		engineDetails.TotalExp = totalEngine
+		engineDetails.AwaitedExp = awaitedEngine
 		total += totalEngine
 		pass += passedEngine
 		fail += failedEngine
@@ -82,17 +84,21 @@ func setEngineChaosMetrics(engineDetails ChaosEngineDetail) {
 	EngineTotalExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.TotalExp)
 	EnginePassedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.PassedExp)
 	EngineFailedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.FailedExp)
+	EngineAwaitedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.AwaitedExp)
 }
 
-func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine) (float64, float64, float64) {
-	var total, passed, failed float64
+func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine) (float64, float64, float64, float64) {
+	var total, passed, failed, awaited float64
 	passed = 0
 	failed = 0
+	awaited = 0
 	expStatusList := chaosEngine.Status.Experiments
 	total = float64(len(expStatusList))
 	for i, v := range expStatusList {
-		verdictFloat := getValueFromVerdict(v.Verdict)
-		if verdictFloat == 3 {
+		verdictFloat := getValueFromVerdict(strings.ToLower(v.Verdict))
+		if verdictFloat == 4 {
+			awaited++
+		} else if verdictFloat == 3 {
 			passed++
 		} else if verdictFloat == 2 {
 			failed++
@@ -100,7 +106,7 @@ func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine
 			defineRunningExperimentMetric(chaosEngine.Name, chaosEngine.Namespace, chaosEngine.Spec.Experiments[i].Name)
 		}
 	}
-	return total, passed, failed
+	return total, passed, failed, awaited
 
 }
 func defineRunningExperimentMetric(engineName string, engineNamespace string, experimentName string) {
@@ -110,25 +116,29 @@ func defineRunningExperimentMetric(engineName string, engineNamespace string, ex
 }
 
 func getValueFromVerdict(verdict string) float64 {
-	if verdict == "Pass" || verdict == "pass" {
+
+	fmt.Printf("Verdict of the Experiment: %v", verdict)
+	if verdict == "pass" {
 		return 3
-	} else if verdict == "Fail" || verdict == "fail" {
+	} else if verdict == "fail" {
 		return 2
-	} else if verdict == "Awaited" || verdict == "awaited" {
+	} else if verdict == "awaited" {
 		return 1
+	} else if verdict == "waiting" {
+		return 4
 	} else {
 		return 0
 	}
 }
 
-func filterMonitoringEnabledEngines(allEngineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
+func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
 	//var filtedEngine *litmuschaosv1alpha1.ChaosEngineList
-	engineList := allEngineList.Items
-	for i, v := range engineList {
+	engineListItems := engineList.Items
+	for i, v := range engineListItems {
 		if v.Spec.Monitoring != true {
-			engineList = append(engineList[:i], engineList[i+1:]...)
+			engineListItems = append(engineListItems[:i], engineListItems[i+1:]...)
 		}
 	}
-	allEngineList.Items = engineList
-	return allEngineList
+	engineList.Items = engineListItems
+	return engineList
 }

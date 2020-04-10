@@ -60,6 +60,7 @@ func registerFixedMetrics() {
 	prometheus.MustRegister(EngineTotalExperiments)
 	prometheus.MustRegister(EnginePassedExperiments)
 	prometheus.MustRegister(EngineFailedExperiments)
+	prometheus.MustRegister(EngineAwaitedExperiments)
 	prometheus.MustRegister(RunningExperiment)
 	prometheus.MustRegister(ClusterTotalExperiments)
 	prometheus.MustRegister(ClusterFailedExperiments)
