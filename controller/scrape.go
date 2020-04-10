@@ -110,9 +110,9 @@ func defineRunningExperimentMetric(engineName string, engineNamespace string, ex
 }
 
 func getValueFromVerdict(verdict string) float64 {
-	if verdict == "Pass" || verdict == "pass" || verdict == "passed" || verdict == "Passed" {
+	if verdict == "Pass" || verdict == "pass" {
 		return 3
-	} else if verdict == "Fail" || verdict == "Failed" || verdict == "failed" || verdict == "fail" {
+	} else if verdict == "Fail" || verdict == "fail" {
 		return 2
 	} else if verdict == "Awaited" || verdict == "awaited" {
 		return 1
