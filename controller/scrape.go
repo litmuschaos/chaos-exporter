@@ -109,7 +109,7 @@ func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine
 }
 func defineRunningExperimentMetric(engineName string, engineNamespace string, experimentName string) {
 	klog.V(2).Infof("Running Experiment Metrics: EnginaName: %v, EngineNamespace: %v, ExperimentName: %v", engineName, engineNamespace, experimentName)
-	RunningExperiment.WithLabelValues(engineNamespace, engineName, experimentName, fmt.Sprintf("%s-%s", engineName, experimentName)).Set(float64(1))
+	RunningExperiment.WithLabelValues(engineNamespace, engineName, experimentName, fmt.Sprintf("%s-%s", engineName, experimentName)).Set(float64(2))
 
 }
 
