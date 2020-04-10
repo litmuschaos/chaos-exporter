@@ -18,6 +18,7 @@ package controller
 
 import (
 	"fmt"
+	"time"
 
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	"github.com/prometheus/client_golang/prometheus"
@@ -40,6 +41,7 @@ func Exporter(config *rest.Config) {
 
 	for {
 		GetLitmusChaosMetrics(litmusClientSet)
+		time.Sleep(1000 * time.Millisecond)
 	}
 }
 

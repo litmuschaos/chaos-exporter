@@ -43,11 +43,11 @@ var numericStatus = map[string]float64{
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
-	allChaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
+	chaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
-	chaosEngineList := filterMonitoringEnabledEngines(allChaosEngineList)
+	filteredChaosEngineList := filterMonitoringEnabledEngines(chaosEngineList)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 	total = 0
 	pass = 0
 	fail = 0
-	for _, chaosEngine := range chaosEngineList.Items {
+	for _, chaosEngine := range filteredChaosEngineList.Items {
 		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
 		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
 		var engineDetails ChaosEngineDetail
@@ -71,7 +71,6 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 		setEngineChaosMetrics(engineDetails)
 	}
 	setClusterChaosMetrics(total, pass, fail)
-	time.Sleep(1000 * time.Millisecond)
 	return nil
 }
 
@@ -117,16 +116,16 @@ func defineRunningExperimentMetric(engineName string, engineNamespace string, ex
 
 func getValueFromVerdict(verdict string) float64 {
 
-	fmt.Printf("Verdict of the Experiment: %v", verdict)
-	if verdict == "pass" {
+	switch verdict {
+	case: "pass":
 		return 4
-	} else if verdict == "fail" {
+	case: "fail":
 		return 3
-	} else if verdict == "awaited" {
+	case "awaited":
 		return 2
-	} else if verdict == "waiting" {
+	case "waiting":
 		return 1
-	} else {
+	default:
 		return 0
 	}
 }
