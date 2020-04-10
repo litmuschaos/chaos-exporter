@@ -130,7 +130,6 @@ func getValueFromVerdict(verdict string) float64 {
 }
 
 func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
-	//var filtedEngine *litmuschaosv1alpha1.ChaosEngineList
 	engineListItems := engineList.Items
 	for i, v := range engineListItems {
 		if v.Spec.Monitoring != true {
