@@ -214,20 +214,23 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				By("Should be matched with failed_experiments regx")
 				Expect(string(metrics)).Should(ContainSubstring("cluster_overall_cluster_failed_experiments 0"))
 
-				By("Should be matched with container_kill experiment regx")
+				By("Should be matched with passed_experiments regx")
 				Expect(string(metrics)).Should(ContainSubstring("cluster_overall_cluster_passed_experiments 1"))
 
-				By("Should be matched with pod_kill experiment experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`c_exp_RunningExperiment{engine_name="engine-nginx",engine_namespace="litmus",experiment_name="pod-delete",result_name="engine-nginx-pod-delete"} 1`))
+				By("Should be matched with pod_delete RunningExperiment")
+				Expect(string(metrics)).Should(ContainSubstring(`cluster_overall_RunningExperiment{engine_name="engine-nginx",engine_namespace="litmus",experiment_name="pod-delete",result_name="engine-nginx-pod-delete"} 1`))
 
-				By("Should be matched with pod_kill experiment experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_experiment_count{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
+				By("Should be matched with total_experiments regx")
+				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_total_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
 
-				By("Should be matched with pod_kill experiment experiments regx")
+				By("Should be matched with engine_failed_experiments regx")
 				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_failed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0`))
 
-				By("Should be matched with pod_kill experiment experiments regx")
+				By("Should be matched with engine_passed_experiments regx")
 				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_passed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
+
+				By("Should be matched with engine_awaited_experiments regx")
+				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_awaited_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
 
 			}
 		})
