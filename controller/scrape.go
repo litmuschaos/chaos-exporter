@@ -19,7 +19,6 @@ package controller
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
@@ -117,9 +116,9 @@ func defineRunningExperimentMetric(engineName string, engineNamespace string, ex
 func getValueFromVerdict(verdict string) float64 {
 
 	switch verdict {
-	case: "pass":
+	case "pass":
 		return 4
-	case: "fail":
+	case "fail":
 		return 3
 	case "awaited":
 		return 2
