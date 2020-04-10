@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 
 	// auth for gcp: optional
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -56,7 +56,7 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 	fail = 0
 	for _, chaosEngine := range chaosEngineList.Items {
 		totalEngine, passedEngine, failedEngine := getExperimentMetricsFromEngine(&chaosEngine)
-		log.Printf("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
+		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
 		var engineDetails ChaosEngineDetail
 		engineDetails.Name = chaosEngine.Name
 		engineDetails.Namespace = chaosEngine.Namespace
@@ -104,7 +104,7 @@ func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine
 
 }
 func defineRunningExperimentMetric(engineName string, engineNamespace string, experimentName string) {
-	log.Printf("Running Experiment Metrics: EnginaName: %v, EngineNamespace: %v, ExperimentName: %v", engineName, engineNamespace, experimentName)
+	klog.V(2).Infof("Running Experiment Metrics: EnginaName: %v, EngineNamespace: %v, ExperimentName: %v", engineName, engineNamespace, experimentName)
 	RunningExperiment.WithLabelValues(engineNamespace, engineName, experimentName, fmt.Sprintf("%s-%s", engineName, experimentName)).Set(float64(1))
 
 }

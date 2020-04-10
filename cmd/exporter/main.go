@@ -44,6 +44,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 
 	"github.com/litmuschaos/chaos-exporter/controller"
 )
@@ -72,6 +73,7 @@ func getKubeConfig() (*rest.Config, error) {
 }
 
 func main() {
+	klog.InitFlags(nil)
 	// Setting up kubeconfig
 	config, err := getKubeConfig()
 	if err != nil {

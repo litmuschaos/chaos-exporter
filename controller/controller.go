@@ -18,25 +18,24 @@ package controller
 
 import (
 	"fmt"
-	"strings"
 
-	log "github.com/Sirupsen/logrus"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog"
 )
 
 // Exporter continuously collects the chaos metrics for a given chaosengine
 func Exporter(config *rest.Config) {
 	_, litmusClientSet, err := generateClientSets(config)
-	log.Printf("Started creating Metrics")
+	klog.V(0).Infof("Started creating Metrics")
 	if err != nil {
-		log.Error(err)
+		klog.Error(err)
 	}
 
 	// Register the fixed (count) chaos metrics
-	log.Printf("Registering Fixed Metrics")
+	klog.V(0).Infof("Registering Fixed Metrics")
 	registerFixedMetrics()
 
 	for {
@@ -55,16 +54,6 @@ func generateClientSets(config *rest.Config) (*kubernetes.Clientset, *clientV1al
 		return nil, nil, fmt.Errorf("unable to generate litmus clientSet %s: ", err)
 	}
 	return k8sClientSet, litmusClientSet, nil
-}
-
-func generatePrometheusGaugeVec(index string) (string, *prometheus.GaugeVec) {
-	sanitizedExpName := strings.Replace(index, "-", "_", -1)
-	var (
-		tmpExp = prometheus.NewGaugeVec(prometheus.GaugeOpts{Namespace: "c", Subsystem: "exp", Name: sanitizedExpName, Help: ""},
-			[]string{"app_uid", "engine_name", "kubernetes_version", "openebs_version"},
-		)
-	)
-	return sanitizedExpName, tmpExp
 }
 
 func registerFixedMetrics() {

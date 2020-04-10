@@ -45,13 +45,6 @@ import (
 var kubeconfig = os.Getenv("HOME") + "/.kube/config"
 var config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 
-//var appUUID = os.Getenv("APP_UUID")
-
-// var exporterSpec = controller.ExporterSpec{
-// 	AppNS:       os.Getenv("APP_NAMESPACE"),
-// 	ChaosEngine: os.Getenv("CHAOSENGINE"),
-// }
-
 func TestChaos(t *testing.T) {
 
 	RegisterFailHandler(Fail)

@@ -2,9 +2,14 @@
 # Reference Guide - https://www.gnu.org/software/make/manual/make.html
 
 IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
-HOME = $(shell echo $$HOME)
+
 # list only our namespaced directories
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
+
+# docker info
+DOCKER_REPO ?= rahulchheda1997
+DOCKER_IMAGE ?= chaos-exporter
+DOCKER_TAG ?= ci
 
 .PHONY: all
 all: format lint deps build test security-checks push 
@@ -77,7 +82,7 @@ docker-build:
 	@echo "--> Build chaos-exporter image" 
 	@echo "------------------"
 	# Dockerfile available in the repo root
-	sudo docker build . -f Dockerfile -t rahulchheda1997/chaos-exporter:ci
+	sudo docker build . -f Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 
 .PHONY: test
 test:
