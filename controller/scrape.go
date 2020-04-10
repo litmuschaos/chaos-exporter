@@ -20,86 +20,98 @@ import (
 	"fmt"
 	"strings"
 
-	// auth for gcp: optional
-	//_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
-	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
-
-	//"github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/klog"
+
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 )
 
 // Holds list of experiments in a chaosengine
 var chaosExperimentList []string
 
-// Holds a lookup of result: numericValue
-var numericStatus = map[string]float64{
-	"not-executed": 0,
-	"running":      1,
-	"fail":         2,
-	"pass":         3,
-}
-
-// Utility fn to return numeric value for a result
-func statusConversion(expStatus string) (numeric float64) {
-	if numeric, ok := numericStatus[expStatus]; ok {
-		return numeric
-	}
-	return numericStatus["not-executed"]
-}
-
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
-func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset, exporterSpec ExporterSpec) (float64, float64, float64, map[string]float64, error) {
-	engine, err := clientSet.LitmuschaosV1alpha1().ChaosEngines(exporterSpec.AppNS).Get(exporterSpec.ChaosEngine, metav1.GetOptions{})
+func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
+	chaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
 	if err != nil {
-		return 0, 0, 0, nil, err
+		return err
 	}
-
-	for _, element := range engine.Spec.Experiments {
-		chaosExperimentList = append(chaosExperimentList, element.Name)
+	filteredChaosEngineList := filterMonitoringEnabledEngines(chaosEngineList)
+	if err != nil {
+		return err
 	}
-
-	// Set default values on the chaosResult map before populating w/ actual values
-	spec := ChaosResultSpec{ExporterSpec: exporterSpec, ChaosExperimentList: chaosExperimentList}
-	chaosResultMap := setChaosResultValue(clientSet, spec)
-
-	chaosResult, StatusMap := calculateChaosResult(chaosResultMap)
-	fmt.Printf("%+v\n", StatusMap)
-	totalExpCount := float64(len(engine.Spec.Experiments))
-
-	return totalExpCount, chaosResult.TotalPassedExp, chaosResult.TotalFailedExp, StatusMap, nil
+	var total, pass, fail float64
+	total = 0
+	pass = 0
+	fail = 0
+	for _, chaosEngine := range filteredChaosEngineList.Items {
+		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
+		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
+		var engineDetails ChaosEngineDetail
+		engineDetails.Name = chaosEngine.Name
+		engineDetails.Namespace = chaosEngine.Namespace
+		engineDetails.TotalExp = totalEngine
+		engineDetails.PassedExp = passedEngine
+		engineDetails.FailedExp = failedEngine
+		engineDetails.AwaitedExp = awaitedEngine
+		total += totalEngine
+		pass += passedEngine
+		fail += failedEngine
+		setEngineChaosMetrics(engineDetails)
+	}
+	setClusterChaosMetrics(total, pass, fail)
+	return nil
 }
 
-//setChaosResultValue will populate the default value of chaos result
-func setChaosResultValue(clientSet *clientV1alpha1.Clientset, chaosResultSpec ChaosResultSpec) map[string]string {
-	chaosResultMap := make(map[string]string)
-	for _, test := range chaosResultSpec.ChaosExperimentList {
-		chaosResultName := fmt.Sprintf("%s-%s", chaosResultSpec.ExporterSpec.ChaosEngine, test)
-		testResultDump, err := clientSet.LitmuschaosV1alpha1().ChaosResults(chaosResultSpec.ExporterSpec.AppNS).Get(chaosResultName, metav1.GetOptions{})
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				// lack of result cr indicates experiment not executed
-				chaosResultMap[test] = "not-executed"
-			}
-			continue
-		}
-		chaosResultMap[test] = testResultDump.Status.ExperimentStatus.Verdict
-	}
-	return chaosResultMap
+func setClusterChaosMetrics(total float64, pass float64, fail float64) {
+	ClusterPassedExperiments.WithLabelValues().Set(pass)
+	ClusterFailedExperiments.WithLabelValues().Set(fail)
+	ClusterTotalExperiments.WithLabelValues().Set(total)
+}
+func setEngineChaosMetrics(engineDetails ChaosEngineDetail) {
+	EngineTotalExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.TotalExp)
+	EnginePassedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.PassedExp)
+	EngineFailedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.FailedExp)
+	EngineWaitingExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.AwaitedExp)
 }
 
-// calculateChaosResult will calculate the number of pass and failed experiments
-func calculateChaosResult(chaosResult map[string]string) (ChaosExpResult, map[string]float64) {
-	var cr ChaosExpResult
-	StatusMap := make(map[string]float64)
-	for index, status := range chaosResult {
-		if status == StatusPassed {
-			cr.TotalPassedExp++
-		} else if status == StatusFailed {
-			cr.TotalFailedExp++
+func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine) (float64, float64, float64, float64) {
+	var total, passed, failed, waiting float64
+	passed = 0
+	failed = 0
+	waiting = 0
+	expStatusList := chaosEngine.Status.Experiments
+	total = float64(len(expStatusList))
+	for i, v := range expStatusList {
+		verdict := strings.ToLower(v.Verdict)
+		switch verdict {
+		case "pass":
+			passed++
+		case "fail":
+			failed++
+		case "waiting":
+			waiting++
+		case "awaited":
+			defineRunningExperimentMetric(chaosEngine.Name, chaosEngine.Namespace, chaosEngine.Spec.Experiments[i].Name)
 		}
-		StatusMap[index] = statusConversion(status)
 	}
+	return total, passed, failed, waiting
 
-	return cr, StatusMap
+}
+func defineRunningExperimentMetric(engineName string, engineNamespace string, experimentName string) {
+	klog.V(2).Infof("Running Experiment Metrics: EnginaName: %v, EngineNamespace: %v, ExperimentName: %v", engineName, engineNamespace, experimentName)
+	RunningExperiment.WithLabelValues(engineNamespace, engineName, experimentName, fmt.Sprintf("%s-%s", engineName, experimentName)).Set(float64(2))
+
+}
+
+func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
+	for i := len(engineList.Items) - 1; i >= 0; i-- {
+		// Condition to decide if current element has to be deleted:
+		if !engineList.Items[i].Spec.Monitoring {
+			engineList.Items = append(engineList.Items[:i],
+				engineList.Items[i+1:]...)
+		}
+	}
+	return engineList
 }

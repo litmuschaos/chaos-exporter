@@ -26,26 +26,24 @@ import (
 	"testing"
 	"time"
 
-	chaosEngineV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	appv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
+	//auth for gcp: optional
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	"github.com/litmuschaos/chaos-exporter/controller"
-	"github.com/litmuschaos/chaos-exporter/pkg/version"
 )
 
 var kubeconfig = os.Getenv("HOME") + "/.kube/config"
 var config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-var appUUID = os.Getenv("APP_UUID")
-
-var exporterSpec = controller.ExporterSpec{
-	AppNS:       os.Getenv("APP_NAMESPACE"),
-	ChaosEngine: os.Getenv("CHAOSENGINE"),
-}
 
 func TestChaos(t *testing.T) {
 
@@ -55,41 +53,115 @@ func TestChaos(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 
-	clientSet, err := clientV1alpha1.NewForConfig(config)
+	litmusClientSet, err := clientV1alpha1.NewForConfig(config)
 	if err != nil {
 		fmt.Println(err)
 	}
-	By("Creating ChaosEngine")
-	chaosEngine := &chaosEngineV1alpha1.ChaosEngine{
+	kubeClientSet, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	cmd := exec.Command("kubectl", "apply", "-f", "https://litmuschaos.github.io/pages/litmus-operator-ci.yaml")
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("Failed to create operator: %v", err)
+	}
+	time.Sleep(30 * time.Second)
+	experimentCreate := exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos?file=charts/generic/experiments.yaml", "-n", "litmus")
+	if err := experimentCreate.Start(); err != nil {
+		log.Fatalf("Failed to create experiment: %v", err)
+	}
+	time.Sleep(30 * time.Second)
+	By("Creating nginx deployment")
+	deployment := &appv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "engine-nginx",
+			Name:      "nginx",
+			Namespace: "litmus",
+			Labels: map[string]string{
+				"app": "nginx",
+			},
+			Annotations: map[string]string{
+				"litmuschaos.io/chaos": "true",
+			},
 		},
-		Spec: chaosEngineV1alpha1.ChaosEngineSpec{
-			Appinfo: chaosEngineV1alpha1.ApplicationParams{
-				Appns:    "default",
+		Spec: appv1.DeploymentSpec{
+			Replicas: func(i int32) *int32 { return &i }(3),
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app": "nginx",
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app": "nginx",
+					},
+				},
+				Spec: v1.PodSpec{
+					ServiceAccountName: "litmus",
+					Containers: []v1.Container{
+						{
+							Name:  "nginx",
+							Image: "nginx:latest",
+							Ports: []v1.ContainerPort{
+								{
+
+									ContainerPort: 80,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	_, err = kubeClientSet.AppsV1().Deployments("litmus").Create(deployment)
+	if err != nil {
+		fmt.Println("Deployment is not created and error is ", err)
+	}
+
+	time.Sleep(30 * time.Second)
+	cmd = exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig="+os.Getenv("HOME")+"/.kube/config")
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("Failed to start exporter: %v", err)
+	}
+
+	time.Sleep(10 * time.Second)
+	//Creating chaosEngine
+	By("Creating ChaosEngine")
+	chaosEngine := &v1alpha1.ChaosEngine{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "engine-nginx",
+			Namespace: "litmus",
+		},
+		Spec: v1alpha1.ChaosEngineSpec{
+			Appinfo: v1alpha1.ApplicationParams{
+				Appns:    "litmus",
 				Applabel: "app=nginx",
 				AppKind:  "deployment",
 			},
 			ChaosServiceAccount: "litmus",
-			JobCleanUpPolicy:    "retain",
-			Monitoring:          true,
-			EngineState:         "active",
-			Experiments: []chaosEngineV1alpha1.ExperimentList{
-				{
-					Name: "container-kill",
+			Components: v1alpha1.ComponentParams{
+				Runner: v1alpha1.RunnerInfo{
+					Image: "litmuschaos/chaos-runner:ci",
+					Type:  "go",
 				},
+			},
+			JobCleanUpPolicy: "retain",
+			Monitoring:       true,
+			EngineState:      "active",
+			Experiments: []v1alpha1.ExperimentList{
 				{
-					Name: "pod-kill",
+					Name: "pod-delete",
 				},
 			},
 		},
 	}
-	response, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("litmus").Create(chaosEngine)
-	if err != nil {
-		fmt.Println("Error while creating ChaosEngine, err: ", err)
-	}
-	fmt.Println("\nDeployed ChaosEngine:", response)
+
+	_, err = litmusClientSet.LitmuschaosV1alpha1().ChaosEngines("litmus").Create(chaosEngine)
 	Expect(err).To(BeNil())
+
+	time.Sleep(30 * time.Second)
 })
 
 var _ = Describe("BDD on chaos-exporter", func() {
@@ -108,19 +180,8 @@ var _ = Describe("BDD on chaos-exporter", func() {
 			if err != nil {
 				fmt.Println(err)
 			}
-			expTotal, passTotal, failTotal, expMap, err := controller.GetLitmusChaosMetrics(clientSet, exporterSpec)
-			if err != nil {
-				Fail(err.Error()) // Unable to get metrics:
-			}
-
-			fmt.Println(expTotal, failTotal, passTotal, expMap)
-
-			//failed experiments should be 0
-			Expect(failTotal).To(Equal(float64(0)))
-			// passed experiments should be 0
-			Expect(passTotal).To(Equal(float64(0)))
-			// total experiment is 2 because we have mentioned it in the chaosengine spec
-			Expect(expTotal).To(Equal(float64(2)))
+			err = controller.GetLitmusChaosMetrics(clientSet)
+			Expect(err).To(BeNil())
 
 		})
 	})
@@ -128,16 +189,11 @@ var _ = Describe("BDD on chaos-exporter", func() {
 	// BDD case 2
 	Context("Curl the prometheus metrics", func() {
 		It("Should return prometheus metrics", func() {
-
 			By("Running Exporter and Sending get request to metrics")
-			cmd := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig="+os.Getenv("HOME")+"/.kube/config")
-			if err := cmd.Start(); err != nil {
-				log.Fatalf("Failed to start exporter: %v", err)
-			}
-			Expect(err).To(BeNil())
 			// wait for execution of exporter
 			log.Println("\nSleeping for 60 second and wait for exporter to start")
-			time.Sleep(60 * time.Second)
+			time.Sleep(120 * time.Second)
+
 			response, err := http.Get("http://127.0.0.1:8080/metrics")
 			Expect(err).To(BeNil())
 			if err != nil {
@@ -151,30 +207,31 @@ var _ = Describe("BDD on chaos-exporter", func() {
 					os.Exit(1)
 				}
 				fmt.Printf("%s\n", string(metrics))
-				var k8sVersion, openEBSVersion string
-				k8sClientSet, err := kubernetes.NewForConfig(config)
-				if err != nil {
-					fmt.Printf("unable to generate kubernetes clientSet %s: ", err)
-				}
-				k8sVersion, _ = version.GetKubernetesVersion(k8sClientSet)             // getting kubernetes version
-				openEBSVersion, _ = version.GetOpenebsVersion(k8sClientSet, "openebs") // getting openEBS Version
-
-				var tmpStr = "{app_uid=\"" + appUUID + "\",engine_name=\"engine-nginx\",kubernetes_version=\"" + k8sVersion + "\",openebs_version=\"" + openEBSVersion + "\"}"
 
 				By("Should be matched with total_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("c_engine_experiment_count" + tmpStr + " 2"))
+				Expect(string(metrics)).Should(ContainSubstring("cluster_overall_cluster_experiment_count 1"))
 
 				By("Should be matched with failed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("c_engine_failed_experiments" + tmpStr + " 0"))
+				Expect(string(metrics)).Should(ContainSubstring("cluster_overall_cluster_failed_experiments 0"))
 
 				By("Should be matched with passed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("c_engine_passed_experiments" + tmpStr + " 0"))
+				Expect(string(metrics)).Should(ContainSubstring("cluster_overall_cluster_passed_experiments 1"))
 
-				By("Should be matched with container_kill experiment regx")
-				Expect(string(metrics)).Should(ContainSubstring("c_exp_container_kill" + tmpStr + " 0"))
+				By("Should be matched with pod_delete RunningExperiment")
+				Expect(string(metrics)).Should(ContainSubstring(`cluster_overall_RunningExperiment{engine_name="engine-nginx",engine_namespace="litmus",experiment_name="pod-delete",result_name="engine-nginx-pod-delete"} 2`))
 
-				By("Should be matched with pod_kill experiment experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("c_exp_pod_kill" + tmpStr + " 0"))
+				By("Should be matched with total_experiments regx")
+				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_total_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
+
+				By("Should be matched with engine_failed_experiments regx")
+				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_failed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0`))
+
+				By("Should be matched with engine_passed_experiments regx")
+				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_passed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
+
+				By("Should be matched with engine_waiting_experiments regx")
+				Expect(string(metrics)).Should(ContainSubstring(`chaosEngine_engine_engine_waiting_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0`))
+
 			}
 		})
 	})

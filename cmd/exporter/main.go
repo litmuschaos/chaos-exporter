@@ -38,13 +38,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"net/http"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"net/http"
-	"os"
+	"k8s.io/klog"
 
 	"github.com/litmuschaos/chaos-exporter/controller"
 )
@@ -53,42 +53,6 @@ import (
 var kubeconfig *string
 var config *rest.Config
 var err error
-
-// getNamespaceEnv checks whether an ENV variable has been set, else sets a default value
-func getNamespaceEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-// get OpenEBS related environments
-func getOpenebsEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
-}
-
-func getExporterSpecs() (controller.ExporterSpec, error) {
-	// Get app details & chaosengine name from ENV
-	// Add checks for default
-	applicationUUID := os.Getenv("APP_UUID")
-	chaosEngine := os.Getenv("CHAOSENGINE")
-
-	// Validate availability of mandatory ENV
-	if chaosEngine == "" {
-		return controller.ExporterSpec{}, fmt.Errorf("please specify correct APP_UUID & CHAOSENGINE ENVs")
-	}
-
-	exporterSpec := controller.ExporterSpec{
-		ChaosEngine:      chaosEngine,
-		AppUUID:          applicationUUID,
-		AppNS:            getNamespaceEnv("APP_NAMESPACE", "default"),
-		OpenebsNamespace: getOpenebsEnv("OPENEBS_NAMESPACE", "openebs"),
-	}
-	return exporterSpec, nil
-}
 
 // getKubeConfig setup the config for access cluster resource
 func getKubeConfig() (*rest.Config, error) {
@@ -109,17 +73,14 @@ func getKubeConfig() (*rest.Config, error) {
 }
 
 func main() {
+	klog.InitFlags(nil)
 	// Setting up kubeconfig
 	config, err := getKubeConfig()
 	if err != nil {
 		panic(err.Error())
 	}
-	exporterSpec, err := getExporterSpecs()
-	if err != nil {
-		log.Fatal("Error: ", err)
-	}
 	// Trigger the chaos metrics collection
-	go controller.Exporter(config, exporterSpec)
+	go controller.Exporter(config)
 	//This section will start the HTTP server and expose metrics on the /metrics endpoint.
 	http.Handle("/metrics", promhttp.Handler())
 	log.Info("Beginning to serve on port :8080")
