@@ -96,13 +96,13 @@ func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine
 	total = float64(len(expStatusList))
 	for i, v := range expStatusList {
 		verdictFloat := getValueFromVerdict(strings.ToLower(v.Verdict))
-		if verdictFloat == 4 {
+		if verdictFloat == 1 {
 			awaited++
-		} else if verdictFloat == 3 {
+		} else if verdictFloat == 4 {
 			passed++
-		} else if verdictFloat == 2 {
+		} else if verdictFloat == 3 {
 			failed++
-		} else if verdictFloat == 1 {
+		} else if verdictFloat == 2 {
 			defineRunningExperimentMetric(chaosEngine.Name, chaosEngine.Namespace, chaosEngine.Spec.Experiments[i].Name)
 		}
 	}
@@ -119,13 +119,13 @@ func getValueFromVerdict(verdict string) float64 {
 
 	fmt.Printf("Verdict of the Experiment: %v", verdict)
 	if verdict == "pass" {
-		return 3
-	} else if verdict == "fail" {
-		return 2
-	} else if verdict == "awaited" {
-		return 1
-	} else if verdict == "waiting" {
 		return 4
+	} else if verdict == "fail" {
+		return 3
+	} else if verdict == "awaited" {
+		return 2
+	} else if verdict == "waiting" {
+		return 1
 	} else {
 		return 0
 	}
