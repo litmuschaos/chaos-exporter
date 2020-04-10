@@ -51,10 +51,10 @@ var (
 		[]string{"engine_namespace", "engine_name"},
 	)
 
-	EngineAwaitedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	EngineWaitingExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "chaosEngine",
 		Subsystem: "engine",
-		Name:      "engine_awaited_experiments",
+		Name:      "engine_waiting_experiments",
 		Help:      "Total number of waiting experiments by the chaos engine",
 	},
 		[]string{"engine_namespace", "engine_name"},

@@ -20,25 +20,16 @@ import (
 	"fmt"
 	"strings"
 
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/klog"
 
-	// auth for gcp: optional
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 )
 
 // Holds list of experiments in a chaosengine
 var chaosExperimentList []string
-
-// Holds a lookup of result: numericValue
-var numericStatus = map[string]float64{
-	"not-executed": 0,
-	"running":      1,
-	"fail":         2,
-	"pass":         3,
-}
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
@@ -82,29 +73,30 @@ func setEngineChaosMetrics(engineDetails ChaosEngineDetail) {
 	EngineTotalExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.TotalExp)
 	EnginePassedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.PassedExp)
 	EngineFailedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.FailedExp)
-	EngineAwaitedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.AwaitedExp)
+	EngineWaitingExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.AwaitedExp)
 }
 
 func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine) (float64, float64, float64, float64) {
-	var total, passed, failed, awaited float64
+	var total, passed, failed, waiting float64
 	passed = 0
 	failed = 0
-	awaited = 0
+	waiting = 0
 	expStatusList := chaosEngine.Status.Experiments
 	total = float64(len(expStatusList))
 	for i, v := range expStatusList {
-		verdictFloat := getValueFromVerdict(strings.ToLower(v.Verdict))
-		if verdictFloat == 1 {
-			awaited++
-		} else if verdictFloat == 4 {
+		verdict := strings.ToLower(v.Verdict)
+		switch verdict {
+		case "pass":
 			passed++
-		} else if verdictFloat == 3 {
+		case "fail":
 			failed++
-		} else if verdictFloat == 2 {
+		case "waiting":
+			waiting++
+		case "awaited":
 			defineRunningExperimentMetric(chaosEngine.Name, chaosEngine.Namespace, chaosEngine.Spec.Experiments[i].Name)
 		}
 	}
-	return total, passed, failed, awaited
+	return total, passed, failed, waiting
 
 }
 func defineRunningExperimentMetric(engineName string, engineNamespace string, experimentName string) {
@@ -113,29 +105,13 @@ func defineRunningExperimentMetric(engineName string, engineNamespace string, ex
 
 }
 
-func getValueFromVerdict(verdict string) float64 {
-
-	switch verdict {
-	case "pass":
-		return 4
-	case "fail":
-		return 3
-	case "awaited":
-		return 2
-	case "waiting":
-		return 1
-	default:
-		return 0
-	}
-}
-
 func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
-	engineListItems := engineList.Items
-	for i, v := range engineListItems {
-		if v.Spec.Monitoring != true {
-			engineListItems = append(engineListItems[:i], engineListItems[i+1:]...)
+	for i := len(engineList.Items) - 1; i >= 0; i-- {
+		// Condition to decide if current element has to be deleted:
+		if !engineList.Items[i].Spec.Monitoring {
+			engineList.Items = append(engineList.Items[:i],
+				engineList.Items[i+1:]...)
 		}
 	}
-	engineList.Items = engineListItems
 	return engineList
 }
