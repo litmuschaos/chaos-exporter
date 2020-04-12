@@ -102,7 +102,7 @@ trivy-security-check:
 	./trivy --exit-code 1 --severity CRITICAL --no-progress litmuschaos/chaos-exporter:ci
 
 .PHONY: push
-push: docker-Push
+push: docker-push
 
 docker-push:
 	@echo "------------------"
