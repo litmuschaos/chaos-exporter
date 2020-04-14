@@ -8,14 +8,15 @@
   To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
   visit this link: [Litmus Docs](https://docs.litmuschaos.io/) 
 
-- typically deployed along with the chaos-operator deployment, which, 
+- Typically deployed along with the chaos-operator deployment, which, 
   in-turn is associated with all chaosengines in the cluster.
 
 - Two types of metrics are exposed: 
 
-  - Common: These metrics are derived from the chaosengine spec/status without and are common to every chaosengine.
+  - Common: These metrics are derived from the chaosengine spec/status and are common 
+    to every chaosengine.
 
-  - Dymanic: Individual Experiment Run Status. The list of experiments may 
+  - Dymanic: Individual experiment run status. The list of experiments may 
     vary across ChaosEngines (or newer tests may be patched into it. 
     The exporter reports experiment status as per list in the chaosengine
 
@@ -25,8 +26,6 @@
 ## Steps to build & deploy: 
 
 ### Local Machine 
-
-- Set the application deployment (assuming a live K8s cluster w/ app and chaos-operator deployed), and give it ClusterRole authorisation similar to chaos-operator deployment 
 
 - Run the exporter container (litmuschaos/chaos-exporter:ci) on host network. It is necessary to mount the kubeconfig
   & override entrypoint w/ `./exporter -kubeconfig <path>`
@@ -39,7 +38,7 @@
 
 - Deploy the chaos-exporter.yaml 
 
-- From a cluster node, execute `curl <exporter-service-ip>:8080/metrics`  or `curl <pod-ip>:8080.metrics`
+- From a cluster node, execute `curl <exporter-service-ip>:8080/metrics` 
 
 ### Example Metrics
 
