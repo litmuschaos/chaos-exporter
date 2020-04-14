@@ -1,90 +1,62 @@
-# Litmus Chaos Exporter
+# Contributing to Litmus Chaos-Exporter
 
-- This is a custom prometheus exporter to expose Litmus Chaos metrics. 
-  To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
-  visit this link: [Litmus Docs](https://docs.litmuschaos.io/) 
+Litmus is an Apache 2.0 Licensed project and uses the standard GitHub pull requests process to review and accept contributions.
 
-- The exporter is tied to a Chaosengine custom resource, which, 
-  in-turn is associated with a given application deployment.
+There are several areas of Litmus that could use your help. For starters, you could help in improving the sections in this document by either creating a new issue describing the improvement or submitting a pull request to this repository. 
 
-- The exporter is typically deployed as a to to the Litmus Experiment
-  Runner container in the engine-runner pod, but can be launched as a
-  separate deployment as well. 
+  * If you are a first-time contributor, please see [Steps to Contribute](#steps-to-contribute).
+  * If you would like to suggest new tests to be added to litmus, please go ahead and [create a new issue](https://github.com/litmuschaos/litmus/issues/new) describing your test. All you need to do is  specify the workload type and the operations that you would like to perform on the workload.
+  * If you would like to work on something more involved, please connect with the Litmus Contributors. 
+  * If you would like to make code contributions, all your commits should be signed with Developer Certificate of Origin. See [Sign your work](#sign-your-work). 
 
-- Two types of metrics are exposed: 
+## Steps to Contribute
 
-  - Fixed: TotalExperimentCount, TotalPassedTests, TotalFailedTests which are derived 
-    from the ChaosEngine specification upfront
+  * Find an issue to work on or create a new issue. The issues are maintained at [litmuschaos/litmus] (https://github.com/litmuschaos/litmus/issues). You can pick up from a list of [good-first-issues] (https://github.com/litmuschaos/litmus/labels/good%20first%20issue).
+  * Claim your issue by commenting your intent to work on it to avoid duplication of efforts. 
+  * Fork the repository on GitHub.
+  * Create a branch from where you want to base your work (usually master).
+  * Make your changes.
+  * Relevant coding style guidelines are the [Go Code Review Comments](https://code.google.com/p/go-wiki/ wiki/CodeReviewComments) and the _Formatting and style_ section of Peter Bourgon's [Go: Best Practices for Production Environments](http://peter.bourgon.org/go-in-production/#formatting-and-style).
+  * Commit your changes by making sure the commit messages convey the need and notes about the commit.
+  * Push your changes to the branch in your fork of the repository.
+  * Submit a pull request to the original repository. See [Pull Request checklist](#pull-request-checklist)
 
-  - Dymanic: Individual Experiment Run Status. The list of experiments may 
-    vary across ChaosEngines (or newer tests may be patched into it. 
-    The exporter reports experiment status as per list in the chaosengine
+## Pull Request Checklist
+  * Rebase to the current master branch before submitting your pull request.
+  * Commits should be as small as possible. Each commit should follow the checklist below:
 
-- The metrics are of type Gauge, w/ each of the status metrics mapped to a 
-  numeric value(not-executed:0, running:1, fail:2, pass:3)
+    - For code changes, add tests relevant to the fixed bug or new feature
+    - Pass the compile and tests - includes spell checks, formatting, etc
+    - Commit header (first line) should convey what changed
+    - Commit body should include details such as why the changes are required and how the proposed  changes
+    - DCO Signed
+  
+  * If your PR is not getting reviewed or you need a specific person to review it, please reach out to the Litmus contributors at the [Litmus slack channel](https://app.slack.com/client/T09NY5SBT/CNXNB0ZTN)
 
-- The metrics carry the application_uuid as label (this has to be passed as ENV)
-## Steps to build & deploy: 
+## Sign your work
 
-### Local Machine 
+We use the Developer Certificate of Origin (DCO) as an additional safeguard for the LitmusChaos project. This is a well established and widely used mechanism to assure that contributors have confirmed their right to license their contribution under the project's license. Please add a line to every git commit message:
 
-#### Pre-requisites:
-
-- A Working Local Kubernetes Cluster (Eg: Minikube or Vagrant)
-  - Set each of these Custom Resource Definition in your Kubernetes Cluster
-  - For ChaosEngine : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine_crd.yaml
-  - For ChaosResult : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosresults_crd.yaml
-  - For ChaosExperiment: https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosexperiment_crd.yaml
-  For information on these Custom Resources, please check this link : https://docs.litmuschaos.io/docs/next/co-components.html
-- Kube-config path of your local Kubernetes Cluster
-- `$GOPATH` set to your working directory
-
-### Further Steps: 
-
-The following steps are required to create sample chaos-related custom resources in order to visualize the metrics gathered by the chaos exporter
-
-- Clone this repo into your $GOPATH/litmuschaos"
-  `git clone https://github.com/litmuschaos/chaos-exporter`
-- Set an APP_UUID in the `~/.bashrc` or the `~/.profile`, add this command to set a default
-- Now, start your Local Cluster, (this guide helps in `minikube` but can be used for other offline clusters as well)
-- Create Kubernetes CR's(Custom Resources) for the litmus operator, link down below:
-- Now, as you have created the CustomResourceDefinition, Now it time to create the CustomResources for these definition above:
-  - For Default ChaosEngine : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine.yaml
-    NOTE THAT THIS CHAOSENGINE COMES WITH A DEFAULT NAME ASSIGNED WITH IT WHICH IS : `engine-nginx`  you would need this afterwards
-  - For Default ChaosResult : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosresult.yaml
-  - For the Default Experiments (Pod Delete Experiment) : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosexperiment.yaml
-- As you have created the ChaosEngine, now again make changes in the `~/.bashrc` or the `~/.profile`, and the add this statement `export CHAOSENGINE=engine-nginx`, if you have changed the ChaosEngine name, then make those changes here as well.
-- Execute the command `source ~/.bashrc` or `source ~/.profile` according to the file you made changes in
-- Now try the command `echo $APP_UUID` and `echo $CHAOSENGINE` , and check the outputs annd verify if they are set according to your preference.
-  - APP_UUID is derived from the app to be added as a metric label for Prometheus Exporter, as same for the ChaosEngine.
-- Run the command `make build` in the root directory.
-- Find your kube-config file for your local cluster.
-  - For minikube it is located in the directory `/home/user_name/.kube/config`, keep this path handy with you
-- After building the file execute this command `sudo ./main -kubeconfig=path_for_the_kubeconfig`
-- Execute `curl 127.0.0.1:8080/metrics | less` to view metrics
-
-### On Kubernetes Cluster
-
-- Install the RBAC (serviceaccount, role, rolebinding) as per deploy/rbac.md
-
-- Deploy the chaos-exporter.yaml 
-
-- From a cluster node, execute `curl <exporter-service-ip>:8080/metrics` 
-
-### Example Metrics
-
-```
-# HELP c_engine_experiment_count Total number of experiments executed by the chaos engine
-# TYPE c_engine_experiment_count gauge
-c_engine_experiment_count{app_uid="1234",engine_name="engine-nginx",kubernetes_version="v1.15.0",openebs_version="1.0"} 1
-# HELP c_engine_failed_experiments Total number of failed experiments
-# TYPE c_engine_failed_experiments gauge
-c_engine_failed_experiments{app_uid="1234",engine_name="engine-nginx",kubernetes_version="v1.15.0",openebs_version="1.0"} 0
-# HELP c_engine_passed_experiments Total number of passed experiments
-# TYPE c_engine_passed_experiments gauge
-c_engine_passed_experiments{app_uid="1234",engine_name="engine-nginx",kubernetes_version="v1.15.0",openebs_version="1.0"} 1
-# HELP c_exp_pod_delete 
-# TYPE c_exp_pod_delete gauge
-c_exp_pod_delete{app_uid="1234",engine_name="engine-nginx",kubernetes_version="v1.15.0",openebs_version="N/A"} 3
+```sh
+  Signed-off-by: Random J Developer <random@developer.example.org>
 ```
 
+Use your real name (sorry, no pseudonyms or anonymous contributions). The email id should match the email id provided in your GitHub profile. 
+If you set your `user.name` and `user.email` in git config, you can sign your commit automatically with `git commit -s`. 
+
+You can also use git [aliases](https://git-scm.com/book/tr/v2/Git-Basics-Git-Aliases) like `git config --global alias.ci 'commit -s'`. Now you can commit with `git ci` and the commit will be signed.
+
+## Setting up your Development Environment
+
+This project is implemented using Go and uses the standard golang tools for development and build. In addition, this project heavily relies on Docker and Kubernetes. It is expected that the contributors:
+  - are familiar with working with Go;
+  - are familiar with Docker containers;
+  - are familiar with Kubernetes and have access to a Kubernetes cluster or Minikube to test the changes.
+
+For setting up a Development environment on your local host, see the detailed instructions [here](./docs/developer.md).
+
+## Community
+
+The litmus community will have a weekly contributor sync-up on Tuesdays 16.00-16.30IST / 12.30-13.00CEST
+  - The sync up meeting is held online on [Google Hangouts](https://meet.google.com/uvt-ozaw-bvp)
+  - The release items are tracked in this [planning sheet](https://docs.google.com/spreadsheets/d/15svGB99bDcSTkwAYttH1QzP5WJSb-dFKbPzl-9WqmXM). 
