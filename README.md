@@ -25,14 +25,20 @@
 
 ## Steps to build & deploy: 
 
-### Local Machine 
+### Running Litmus Chaos Experiments in order to generate metrics
+
+- Follow the steps described [here](https://github.com/litmuschaos/chaos-operator/blob/master/deploy/README.md) 
+  to start running litmus chaos experiments ans storing chaos results. The chaos custom resources are used by the 
+  exporter to generate metrics. 
+  
+### Running Chaos Exporter on the local Machine 
 
 - Run the exporter container (litmuschaos/chaos-exporter:ci) on host network. It is necessary to mount the kubeconfig
   & override entrypoint w/ `./exporter -kubeconfig <path>`
 
 - Execute `curl 127.0.0.1:8080/metrics` to view metrics
 
-### On Kubernetes Cluster
+### Running Chaos Exporter as a deployment on the Kubernetes Cluster
 
 - Install the RBAC (serviceaccount, role, rolebinding) as per deploy/rbac.md
 
