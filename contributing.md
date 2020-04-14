@@ -1,95 +1,62 @@
-# Litmus Chaos Monitor
+# Contributing to Litmus Chaos-Exporter
 
-- This is a custom prometheus exporter to expose Litmus Chaos metrics. 
-  To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
-  visit this link: [Litmus Docs](https://docs.litmuschaos.io/) 
+Litmus is an Apache 2.0 Licensed project and uses the standard GitHub pull requests process to review and accept contributions.
 
-- Two types of metrics are exposed: 
+There are several areas of Litmus that could use your help. For starters, you could help in improving the sections in this document by either creating a new issue describing the improvement or submitting a pull request to this repository. 
 
-  - Fixed: ClusterTotalExperimentCount, ClusterTotalPassedCount, ClusterTotalFailedCount, EngineTotalExperimentCount, EnginePassedExperimentCount, EngineFailedExperimentCount, EngineWaitingExperimentCount  which are derived 
-    from the ChaosEngine specification upfront
+  * If you are a first-time contributor, please see [Steps to Contribute](#steps-to-contribute).
+  * If you would like to suggest new tests to be added to litmus, please go ahead and [create a new issue](https://github.com/litmuschaos/litmus/issues/new) describing your test. All you need to do is  specify the workload type and the operations that you would like to perform on the workload.
+  * If you would like to work on something more involved, please connect with the Litmus Contributors. 
+  * If you would like to make code contributions, all your commits should be signed with Developer Certificate of Origin. See [Sign your work](#sign-your-work). 
 
-  - Dymanic: Individual Experiment Run Status. The list of experiments may 
-    vary across ChaosEngines (or newer tests may be patched into it. 
-    The exporter reports experiment status as per list in the chaosengine
+## Steps to Contribute
 
-- The metrics are of type Gauge, w/ each of the status metrics mapped to a 
-  numeric value(not-executed:0, fail:1, running:2, pass:3)
+  * Find an issue to work on or create a new issue. The issues are maintained at [litmuschaos/litmus] (https://github.com/litmuschaos/litmus/issues). You can pick up from a list of [good-first-issues] (https://github.com/litmuschaos/litmus/labels/good%20first%20issue).
+  * Claim your issue by commenting your intent to work on it to avoid duplication of efforts. 
+  * Fork the repository on GitHub.
+  * Create a branch from where you want to base your work (usually master).
+  * Make your changes.
+  * Relevant coding style guidelines are the [Go Code Review Comments](https://code.google.com/p/go-wiki/ wiki/CodeReviewComments) and the _Formatting and style_ section of Peter Bourgon's [Go: Best Practices for Production Environments](http://peter.bourgon.org/go-in-production/#formatting-and-style).
+  * Commit your changes by making sure the commit messages convey the need and notes about the commit.
+  * Push your changes to the branch in your fork of the repository.
+  * Submit a pull request to the original repository. See [Pull Request checklist](#pull-request-checklist)
 
+## Pull Request Checklist
+  * Rebase to the current master branch before submitting your pull request.
+  * Commits should be as small as possible. Each commit should follow the checklist below:
 
-## Steps to build & deploy: 
+    - For code changes, add tests relevant to the fixed bug or new feature
+    - Pass the compile and tests - includes spell checks, formatting, etc
+    - Commit header (first line) should convey what changed
+    - Commit body should include details such as why the changes are required and how the proposed  changes
+    - DCO Signed
+  
+  * If your PR is not getting reviewed or you need a specific person to review it, please reach out to the Litmus contributors at the [Litmus slack channel](https://app.slack.com/client/T09NY5SBT/CNXNB0ZTN)
 
-### Local Machine 
+## Sign your work
 
-#### Pre-requisites:
+We use the Developer Certificate of Origin (DCO) as an additional safeguard for the LitmusChaos project. This is a well established and widely used mechanism to assure that contributors have confirmed their right to license their contribution under the project's license. Please add a line to every git commit message:
 
-- A Working Local Kubernetes Cluster (Eg: Minikube or Vagrant)
-  - Set each of these Custom Resource Definition in your Kubernetes Cluster
-  - For ChaosEngine : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine_crd.yaml
-  - For ChaosResult : https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosresults_crd.yaml
-  - For ChaosExperiment: https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosexperiment_crd.yaml
-  For information on these Custom Resources, please check this link : https://docs.litmuschaos.io/docs/next/co-components.html
-- Kube-config path of your local Kubernetes Cluster
-- `$GOPATH` set to your working directory
-
-### Further Steps: 
-
-The following steps are required to create sample chaos-related custom resources in order to visualize the metrics gathered by the chaos exporter
-
-- Clone this repo into your $GOPATH/litmuschaos"
-  `git clone https://github.com/litmuschaos/chaos-exporter`
-- Now, start your Local Cluster, (this guide helps in `minikube` but can be used for other offline clusters as well)
-- Create Kubernetes CR's(Custom Resources) for the litmus operator, link down below:
-- Now, as you have created the CustomResourceDefinition, Now it time to run some chaos experiments with the help of chaos operator(github.com/litmuschaos/chaos-operator):
-- Try to run chaos-monitor with the chaos-operator, or in other namespace, but will a ClusterRole similar to that of `https://github.com/litmuschaos/chaos-operator/blob/master/deploy/rbac.yaml`
-- Run the command `make build` in the root directory.
-- Find your kube-config file for your local cluster.
-  - For minikube it is located in the directory `/home/user_name/.kube/config`, keep this path handy with you
-- After building the file execute this command `sudo ./main -kubeconfig=path_for_the_kubeconfig`
-- Execute `curl 127.0.0.1:8080/metrics | less` to view metrics
-
-### On Kubernetes Cluster
-
-- Install the RBAC (serviceaccount, role, rolebinding) as per deploy/rbac.md
-
-- Deploy the chaos-exporter.yaml 
-
-- From a cluster node, execute `curl <exporter-service-ip>:8080/metrics` 
-
-### Example Metrics
-
-```
-# HELP c_exp_RunningExperiment Running Experiment with ChaosEngine Details
-# TYPE c_exp_RunningExperiment gauge
-c_exp_RunningExperiment{engine_name="engine3",engine_namespace="litmus",experiment_name="pod-delete",result_name="engine3-pod-delete"} 1
-# HELP chaosEngine_engine_engine_awaited_experiments Total number of waiting experiments by the chaos engine
-# TYPE chaosEngine_engine_engine_awaited_experiments gauge
-chaosEngine_engine_engine_awaited_experiments{engine_name="engine3",engine_namespace="litmus"} 1
-# HELP chaosEngine_engine_engine_experiment_count Total number of experiments executed by the chaos engine
-# TYPE chaosEngine_engine_engine_experiment_count gauge
-chaosEngine_engine_engine_experiment_count{engine_name="engine3",engine_namespace="litmus"} 2
-# HELP chaosEngine_engine_engine_failed_experiments Total number of failed experiments by the chaos engine
-# TYPE chaosEngine_engine_engine_failed_experiments gauge
-chaosEngine_engine_engine_failed_experiments{engine_name="engine3",engine_namespace="litmus"} 0
-# HELP chaosEngine_engine_engine_passed_experiments Total number of passed experiments by the chaos engine
-# TYPE chaosEngine_engine_engine_passed_experiments gauge
-chaosEngine_engine_engine_passed_experiments{engine_name="engine3",engine_namespace="litmus"} 0
-# HELP cluster_overall_cluster_experiment_count Total number of experiments executed in the Cluster
-# TYPE cluster_overall_cluster_experiment_count gauge
-cluster_overall_cluster_experiment_count 2
-# HELP cluster_overall_cluster_failed_experiments Total number of failed experiments in the Cluster
-# TYPE cluster_overall_cluster_failed_experiments gauge
-cluster_overall_cluster_failed_experiments 0
-# HELP cluster_overall_cluster_passed_experiments Total number of passed experiments in the Cluster
-# TYPE cluster_overall_cluster_passed_experiments gauge
-cluster_overall_cluster_passed_experiments 0
-# HELP go_gc_duration_seconds A summary of the GC invocation durations.
-# TYPE go_gc_duration_seconds summary
-go_gc_duration_seconds{quantile="0"} 1.1785e-05
-go_gc_duration_seconds{quantile="0.25"} 1.1785e-05
-go_gc_duration_seconds{quantile="0.5"} 1.4254e-05
-go_gc_duration_seconds{quantile="0.75"} 1.9929e-05
-go_gc_duration_seconds{quantile="1"} 1.9929e-05
-...
+```sh
+  Signed-off-by: Random J Developer <random@developer.example.org>
 ```
 
+Use your real name (sorry, no pseudonyms or anonymous contributions). The email id should match the email id provided in your GitHub profile. 
+If you set your `user.name` and `user.email` in git config, you can sign your commit automatically with `git commit -s`. 
+
+You can also use git [aliases](https://git-scm.com/book/tr/v2/Git-Basics-Git-Aliases) like `git config --global alias.ci 'commit -s'`. Now you can commit with `git ci` and the commit will be signed.
+
+## Setting up your Development Environment
+
+This project is implemented using Go and uses the standard golang tools for development and build. In addition, this project heavily relies on Docker and Kubernetes. It is expected that the contributors:
+  - are familiar with working with Go;
+  - are familiar with Docker containers;
+  - are familiar with Kubernetes and have access to a Kubernetes cluster or Minikube to test the changes.
+
+For setting up a Development environment on your local host, see the detailed instructions [here](./docs/developer.md).
+
+## Community
+
+The litmus community will have a weekly contributor sync-up on Tuesdays 16.00-16.30IST / 12.30-13.00CEST
+  - The sync up meeting is held online on [Google Hangouts](https://meet.google.com/uvt-ozaw-bvp)
+  - The release items are tracked in this [planning sheet](https://docs.google.com/spreadsheets/d/15svGB99bDcSTkwAYttH1QzP5WJSb-dFKbPzl-9WqmXM). 
