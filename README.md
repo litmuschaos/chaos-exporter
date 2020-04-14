@@ -8,16 +8,12 @@
   To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
   visit this link: [Litmus Docs](https://docs.litmuschaos.io/) 
 
-- The exporter is tied to a Chaos-operator deployment resource, which, 
+- typically deployed along with the chaos-operator deployment, which, 
   in-turn is associated with all chaosengines in the cluster.
-
-- The exporter is typically deployed as a sidecar to the Litmus Chaos Operator Deployment, but can be launched as a
-  separate deployment as well. 
 
 - Two types of metrics are exposed: 
 
-  - Fixed: ClusterTotalExperimentCount, ClusterTotalPassedCount, ClusterTotalFailedCount, EngineTotalExperimentCount, EnginePassedExperimentCount, EngineFailedExperimentCount, EngineWaitingExperimentCount  which are derived 
-    from the ChaosEngine specification upfront
+  - Common: These metrics are derived from the chaosengine spec/status without and are common to every chaosengine.
 
   - Dymanic: Individual Experiment Run Status. The list of experiments may 
     vary across ChaosEngines (or newer tests may be patched into it. 

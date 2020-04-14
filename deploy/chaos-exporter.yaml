@@ -1,31 +1,41 @@
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
+  labels:
+    app: chaos-monitor
   name: chaos-monitor
   namespace: litmus
 spec:
-  containers:
-  - image: litmuschaos/chaos-exporter:ci
-    imagePullPolicy: Always
-    name: chaos-monitor
-    ports:
-    - containerPort: 8080
-      name: metrics
-      protocol: TCP
-  serviceAccount: litmus
-  serviceAccountName: litmus
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-monitor
+  template:
+    metadata:
+      labels:
+        app: chaos-monitor
+    spec:
+      containers:
+      - image: litmuschaos/chaos-exporter:ci
+        imagePullPolicy: Always
+        name: chaos-exporter
+      serviceAccount: litmus
+      serviceAccountName: litmus
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: chaos-monitor
-  namespace: litmus
   labels:
     app: chaos-monitor
+  name: chaos-monitor
+  namespace: litmus
 spec:
   ports:
   - port: 8080
-    name: metrics
+    protocol: TCP
+    targetPort: 8080
   selector:
     app: chaos-monitor
+  type: ClusterIP
+
