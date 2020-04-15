@@ -8,45 +8,37 @@
   To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
   visit this link: [Litmus Docs](https://docs.litmuschaos.io/) 
 
-- The exporter is tied to a Chaosengine custom resource, which, 
-  in-turn is associated with a given application deployment.
-
-- The exporter is typically deployed as a sidecar to the Litmus Experiment
-  Runner container in the engine-runner pod, but can be launched as a
-  separate deployment as well. 
+- Typically deployed along with the chaos-operator deployment, which, 
+  in-turn is associated with all chaosengines in the cluster.
 
 - Two types of metrics are exposed: 
 
-  - Fixed: TotalExperimentCount, TotalPassedTests, TotalFailedTests which are derived 
-    from the ChaosEngine specification upfront
+  - Common: These metrics are derived from the chaosengine spec/status and are common 
+    to every chaosengine.
 
-  - Dymanic: Individual Experiment Run Status. The list of experiments may 
+  - Dymanic: Individual experiment run status. The list of experiments may 
     vary across ChaosEngines (or newer tests may be patched into it. 
     The exporter reports experiment status as per list in the chaosengine
 
 - The metrics are of type Gauge, w/ each of the status metrics mapped to a 
-  numeric value(not-executed:0, running:1, fail:2, pass:3)
-
-- The metrics carry the application_uuid as label (this has to be passed as ENV)
+  numeric value(not-executed:0, fail:1, running:2, pass:3)
 
 ## Steps to build & deploy: 
 
-### Local Machine 
+### Running Litmus Chaos Experiments in order to generate metrics
 
-- Set the application deployment (assuming a live K8s cluster w/ app) UUID as ENV (APP_UUID)
-
-- Set the ChaosEngine CR name as ENV (CHAOSENGINE) 
-  - For CR spec, see: https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosengine.yaml
-
-- If the experiments are not executed, apply the ChaosResult CRs manually 
-  - For CR spec, see: https://github.com/litmuschaos/chaos-operator/blob/master/deploy/crds/chaosresult.yaml
+- Follow the steps described [here](https://github.com/litmuschaos/chaos-operator/blob/master/deploy/README.md) 
+  to start running litmus chaos experiments ans storing chaos results. The chaos custom resources are used by the 
+  exporter to generate metrics. 
+  
+### Running Chaos Exporter on the local Machine 
 
 - Run the exporter container (litmuschaos/chaos-exporter:ci) on host network. It is necessary to mount the kubeconfig
   & override entrypoint w/ `./exporter -kubeconfig <path>`
 
 - Execute `curl 127.0.0.1:8080/metrics` to view metrics
 
-### On Kubernetes Cluster
+### Running Chaos Exporter as a deployment on the Kubernetes Cluster
 
 - Install the RBAC (serviceaccount, role, rolebinding) as per deploy/rbac.md
 
@@ -57,19 +49,38 @@
 ### Example Metrics
 
 ```
-c_engine_experiment_count{app_uid="3f2092f8-6400-11e9-905f-42010a800131"} 2
-# HELP c_engine_failed_experiments Total number of failed experiments
-# TYPE c_engine_failed_experiments gauge
-c_engine_failed_experiments{app_uid="3f2092f8-6400-11e9-905f-42010a800131"} 1
-# HELP c_engine_passed_experiments Total number of passed experiments
-# TYPE c_engine_passed_experiments gauge
-c_engine_passed_experiments{app_uid="3f2092f8-6400-11e9-905f-42010a800131"} 1
-# HELP c_exp_engine_nginx_container_kill 
-# TYPE c_exp_engine_nginx_container_kill gauge
-c_exp_engine_nginx_container_kill{app_uid="3f2092f8-6400-11e9-905f-42010a800131"} 2
-# HELP c_exp_engine_nginx_pod_failure 
-# TYPE c_exp_engine_nginx_pod_failure gauge
-c_exp_engine_nginx_pod_failure{app_uid="3f2092f8-6400-11e9-905f-42010a800131"} 3
+# HELP c_exp_RunningExperiment Running Experiment with ChaosEngine Details
+# TYPE c_exp_RunningExperiment gauge
+c_exp_RunningExperiment{engine_name="engine3",engine_namespace="litmus",experiment_name="pod-delete",result_name="engine3-pod-delete"} 1
+# HELP chaosEngine_engine_engine_awaited_experiments Total number of waiting experiments by the chaos engine
+# TYPE chaosEngine_engine_engine_awaited_experiments gauge
+chaosEngine_engine_engine_awaited_experiments{engine_name="engine3",engine_namespace="litmus"} 1
+# HELP chaosEngine_engine_engine_experiment_count Total number of experiments executed by the chaos engine
+# TYPE chaosEngine_engine_engine_experiment_count gauge
+chaosEngine_engine_engine_experiment_count{engine_name="engine3",engine_namespace="litmus"} 2
+# HELP chaosEngine_engine_engine_failed_experiments Total number of failed experiments by the chaos engine
+# TYPE chaosEngine_engine_engine_failed_experiments gauge
+chaosEngine_engine_engine_failed_experiments{engine_name="engine3",engine_namespace="litmus"} 0
+# HELP chaosEngine_engine_engine_passed_experiments Total number of passed experiments by the chaos engine
+# TYPE chaosEngine_engine_engine_passed_experiments gauge
+chaosEngine_engine_engine_passed_experiments{engine_name="engine3",engine_namespace="litmus"} 0
+# HELP cluster_overall_cluster_experiment_count Total number of experiments executed in the Cluster
+# TYPE cluster_overall_cluster_experiment_count gauge
+cluster_overall_cluster_experiment_count 2
+# HELP cluster_overall_cluster_failed_experiments Total number of failed experiments in the Cluster
+# TYPE cluster_overall_cluster_failed_experiments gauge
+cluster_overall_cluster_failed_experiments 0
+# HELP cluster_overall_cluster_passed_experiments Total number of passed experiments in the Cluster
+# TYPE cluster_overall_cluster_passed_experiments gauge
+cluster_overall_cluster_passed_experiments 0
+# HELP go_gc_duration_seconds A summary of the GC invocation durations.
+# TYPE go_gc_duration_seconds summary
+go_gc_duration_seconds{quantile="0"} 1.1785e-05
+go_gc_duration_seconds{quantile="0.25"} 1.1785e-05
+go_gc_duration_seconds{quantile="0.5"} 1.4254e-05
+go_gc_duration_seconds{quantile="0.75"} 1.9929e-05
+go_gc_duration_seconds{quantile="1"} 1.9929e-05
+...
 ```
 
 
