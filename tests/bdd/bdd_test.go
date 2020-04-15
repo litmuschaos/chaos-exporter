@@ -67,7 +67,7 @@ var _ = BeforeSuite(func() {
 		log.Fatalf("Failed to create operator: %v", err)
 	}
 	time.Sleep(30 * time.Second)
-	experimentCreate := exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos?file=charts/generic/experiments.yaml", "-n", "litmus")
+	experimentCreate := exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos/master?file=charts/generic/experiments.yaml", "-n", "litmus")
 	if err := experimentCreate.Start(); err != nil {
 		log.Fatalf("Failed to create experiment: %v", err)
 	}
