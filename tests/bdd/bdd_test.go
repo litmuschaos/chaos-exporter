@@ -227,7 +227,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				Expect(string(metrics)).Should(ContainSubstring(`chaosengine_failed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0`))
 
 				By("Should be matched with engine_passed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`chaosegine_passed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
+				Expect(string(metrics)).Should(ContainSubstring(`chaosengine_passed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
 
 				By("Should be matched with engine_waiting_experiments regx")
 				Expect(string(metrics)).Should(ContainSubstring(`chaosengine_waiting_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0`))

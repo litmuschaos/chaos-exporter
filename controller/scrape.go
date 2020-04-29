@@ -58,6 +58,7 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 		total += totalEngine
 		pass += passedEngine
 		fail += failedEngine
+		fmt.Printf("Passed: %v, Failed: %v, Waiting: %v\n", engineDetails.PassedExp, engineDetails.FailedExp, engineDetails.AwaitedExp)
 		setEngineChaosMetrics(engineDetails)
 	}
 	setClusterChaosMetrics(total, pass, fail)
@@ -78,9 +79,6 @@ func setEngineChaosMetrics(engineDetails ChaosEngineDetail) {
 
 func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine) (float64, float64, float64, float64) {
 	var total, passed, failed, waiting float64
-	passed = 0
-	failed = 0
-	waiting = 0
 	expStatusList := chaosEngine.Status.Experiments
 	total = float64(len(expStatusList))
 	for i, v := range expStatusList {
@@ -106,12 +104,13 @@ func defineRunningExperimentMetric(engineName string, engineNamespace string, ex
 }
 
 func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
+	var filteredEngineList litmuschaosv1alpha1.ChaosEngineList
 	for i := len(engineList.Items) - 1; i >= 0; i-- {
+		fmt.Printf("MonitoringStatus: %v\n", engineList.Items[i].Spec.Monitoring)
 		// Condition to decide if current element has to be deleted:
-		if !engineList.Items[i].Spec.Monitoring {
-			engineList.Items = append(engineList.Items[:i],
-				engineList.Items[i+1:]...)
+		if engineList.Items[i].Spec.Monitoring {
+			filteredEngineList.Items = append(filteredEngineList.Items, engineList.Items[i])
 		}
 	}
-	return engineList
+	return &filteredEngineList
 }
