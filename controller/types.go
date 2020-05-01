@@ -25,36 +25,36 @@ var registeredResultMetrics []string
 // Declare the fixed chaos metrics. Dynamic (testStatus) metrics are defined in metrics()
 var (
 	EngineTotalExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "chaosEngine",
-		Subsystem: "engine",
-		Name:      "engine_total_experiments",
+		Namespace: "chaosengine",
+		Subsystem: "",
+		Name:      "experiment_count",
 		Help:      "Total number of experiments executed by the chaos engine",
 	},
 		[]string{"engine_namespace", "engine_name"},
 	)
 
 	EnginePassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "chaosEngine",
-		Subsystem: "engine",
-		Name:      "engine_passed_experiments",
+		Namespace: "chaosengine",
+		Subsystem: "",
+		Name:      "passed_experiments",
 		Help:      "Total number of passed experiments by the chaos engine",
 	},
 		[]string{"engine_namespace", "engine_name"},
 	)
 
 	EngineFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "chaosEngine",
-		Subsystem: "engine",
-		Name:      "engine_failed_experiments",
+		Namespace: "chaosengine",
+		Subsystem: "",
+		Name:      "failed_experiments",
 		Help:      "Total number of failed experiments by the chaos engine",
 	},
 		[]string{"engine_namespace", "engine_name"},
 	)
 
 	EngineWaitingExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "chaosEngine",
-		Subsystem: "engine",
-		Name:      "engine_waiting_experiments",
+		Namespace: "chaosengine",
+		Subsystem: "",
+		Name:      "waiting_experiments",
 		Help:      "Total number of waiting experiments by the chaos engine",
 	},
 		[]string{"engine_namespace", "engine_name"},
@@ -63,7 +63,7 @@ var (
 	ClusterTotalExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "cluster",
 		Subsystem: "overall",
-		Name:      "cluster_experiment_count",
+		Name:      "experiment_count",
 		Help:      "Total number of experiments executed in the Cluster",
 	},
 		[]string{},
@@ -72,7 +72,7 @@ var (
 	ClusterPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "cluster",
 		Subsystem: "overall",
-		Name:      "cluster_passed_experiments",
+		Name:      "passed_experiments",
 		Help:      "Total number of passed experiments in the Cluster",
 	},
 		[]string{},
@@ -81,7 +81,7 @@ var (
 	ClusterFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "cluster",
 		Subsystem: "overall",
-		Name:      "cluster_failed_experiments",
+		Name:      "failed_experiments",
 		Help:      "Total number of failed experiments in the Cluster",
 	},
 		[]string{},

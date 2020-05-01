@@ -41,10 +41,9 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 	if err != nil {
 		return err
 	}
-	var total, pass, fail float64
-	total = 0
-	pass = 0
-	fail = 0
+	var total float64 = 0
+	var pass float64 = 0
+	var fail float64 = 0
 	for _, chaosEngine := range filteredChaosEngineList.Items {
 		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
 		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
@@ -78,9 +77,6 @@ func setEngineChaosMetrics(engineDetails ChaosEngineDetail) {
 
 func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine) (float64, float64, float64, float64) {
 	var total, passed, failed, waiting float64
-	passed = 0
-	failed = 0
-	waiting = 0
 	expStatusList := chaosEngine.Status.Experiments
 	total = float64(len(expStatusList))
 	for i, v := range expStatusList {
@@ -106,12 +102,12 @@ func defineRunningExperimentMetric(engineName string, engineNamespace string, ex
 }
 
 func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
+	var filteredEngineList litmuschaosv1alpha1.ChaosEngineList
 	for i := len(engineList.Items) - 1; i >= 0; i-- {
 		// Condition to decide if current element has to be deleted:
-		if !engineList.Items[i].Spec.Monitoring {
-			engineList.Items = append(engineList.Items[:i],
-				engineList.Items[i+1:]...)
+		if engineList.Items[i].Spec.Monitoring {
+			filteredEngineList.Items = append(filteredEngineList.Items, engineList.Items[i])
 		}
 	}
-	return engineList
+	return &filteredEngineList
 }
