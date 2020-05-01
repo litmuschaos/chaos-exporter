@@ -41,10 +41,9 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 	if err != nil {
 		return err
 	}
-	var total, pass, fail float64
-	total = 0
-	pass = 0
-	fail = 0
+	var total float64 = 0
+	var pass float64 = 0
+	var fail float64 = 0
 	for _, chaosEngine := range filteredChaosEngineList.Items {
 		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
 		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
@@ -58,7 +57,6 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 		total += totalEngine
 		pass += passedEngine
 		fail += failedEngine
-		fmt.Printf("Passed: %v, Failed: %v, Waiting: %v\n", engineDetails.PassedExp, engineDetails.FailedExp, engineDetails.AwaitedExp)
 		setEngineChaosMetrics(engineDetails)
 	}
 	setClusterChaosMetrics(total, pass, fail)
