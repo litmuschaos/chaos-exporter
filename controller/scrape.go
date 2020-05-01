@@ -106,7 +106,6 @@ func defineRunningExperimentMetric(engineName string, engineNamespace string, ex
 func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
 	var filteredEngineList litmuschaosv1alpha1.ChaosEngineList
 	for i := len(engineList.Items) - 1; i >= 0; i-- {
-		fmt.Printf("MonitoringStatus: %v\n", engineList.Items[i].Spec.Monitoring)
 		// Condition to decide if current element has to be deleted:
 		if engineList.Items[i].Spec.Monitoring {
 			filteredEngineList.Items = append(filteredEngineList.Items, engineList.Items[i])

@@ -27,7 +27,7 @@ var (
 	EngineTotalExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "chaosengine",
 		Subsystem: "",
-		Name:      "total_experiments",
+		Name:      "experiment_count",
 		Help:      "Total number of experiments executed by the chaos engine",
 	},
 		[]string{"engine_namespace", "engine_name"},
