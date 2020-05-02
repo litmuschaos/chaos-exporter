@@ -50,51 +50,35 @@
 
 ```
 # HELP chaosengine_experiments_count Total number of experiments executed by the chaos engine
-
 # TYPE chaosengine_experiments_count gauge
-
 chaosengine_experiments_count{engine_name="engine-nginx",engine_namespace="litmus"} 1
 
 # HELP chaosengine_failed_experiments Total number of failed experiments by the chaos engine
-
 # TYPE chaosengine_failed_experiments gauge
-
 chaosengine_failed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0
 
 # HELP chaosengine_passed_experiments Total number of passed experiments by the chaos engine
-
 # TYPE chaosengine_passed_experiments gauge
-
 chaosengine_passed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1
 
 # HELP chaosengine_waiting_experiments Total number of waiting experiments by the chaos engine
-
 # TYPE chaosengine_waiting_experiments gauge
-
 chaosengine_waiting_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0
 
 # HELP cluster_overall_RunningExperiment Running Experiment with ChaosEngine Details
-
 # TYPE cluster_overall_RunningExperiment gauge
-
 cluster_overall_RunningExperiment{engine_name="engine-nginx",engine_namespace="litmus",experiment_name="pod-delete",result_name="engine-nginx-pod-delete"} 2
 
 # HELP cluster_overall_experiments_count Total number of experiments executed in the Cluster
-
 # TYPE cluster_overall_experiments_count gauge
-
 cluster_overall_experiments_count 1
 
 # HELP cluster_overall_failed_experiments Total number of failed experiments in the Cluster
-
 # TYPE cluster_overall_failed_experiments gauge
-
 cluster_overall_failed_experiments 0
 
 # HELP cluster_overall_passed_experiments Total number of passed experiments in the Cluster
-
 # TYPE cluster_overall_passed_experiments gauge
-
 cluster_overall_passed_experiments 1
 ...
 ```
