@@ -14,26 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/* The chaos exporter collects and exposes the following type of metrics:
-
-   Fixed (always captured):
-     - Total number of chaos experiments
-     - Total number of passed experiments
-     - Total Number of failed experiments
-
-   Dynamic (experiment list may vary based on c.engine):
-     - States of individual chaos experiments
-     - {not-executed:0, running:1, fail:2, pass:3}
-       Improve representation of test state
-
-   Common experiments include:
-
-     - pod_failure
-     - container_kill
-     - container_network_delay
-     - container_packet_loss
-*/
-
 package main
 
 import (
