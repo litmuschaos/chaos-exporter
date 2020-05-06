@@ -20,7 +20,6 @@ import (
 	"flag"
 	"net/http"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -63,6 +62,6 @@ func main() {
 	go controller.Exporter(config)
 	//This section will start the HTTP server and expose metrics on the /metrics endpoint.
 	http.Handle("/metrics", promhttp.Handler())
-	log.Info("Beginning to serve on port :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	klog.Info("Beginning to serve on port :8080")
+	klog.Fatal(http.ListenAndServe(":8080", nil))
 }
