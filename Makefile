@@ -55,7 +55,7 @@ godeps:
 	@echo "INFO:\tverifying dependencies for chaos exporter build ..."
 	@go get -u -v golang.org/x/lint/golint
 	@go get -u -v golang.org/x/tools/cmd/goimports
-	@go get -u -v github.com/golang/dep/cmd/dep
+	
 
 .PHONY: bdddeps
 bdddeps:
