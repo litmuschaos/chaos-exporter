@@ -21,6 +21,7 @@ import (
 	"time"
 
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -43,6 +44,38 @@ func Exporter(config *rest.Config) {
 		GetLitmusChaosMetrics(litmusClientSet)
 		time.Sleep(1000 * time.Millisecond)
 	}
+}
+
+// GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
+func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
+	chaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	filteredChaosEngineList := filterMonitoringEnabledEngines(chaosEngineList)
+	if err != nil {
+		return err
+	}
+	var total float64 = 0
+	var pass float64 = 0
+	var fail float64 = 0
+	for _, chaosEngine := range filteredChaosEngineList.Items {
+		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
+		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
+		var engineDetails ChaosEngineDetail
+		engineDetails.Name = chaosEngine.Name
+		engineDetails.Namespace = chaosEngine.Namespace
+		engineDetails.TotalExp = totalEngine
+		engineDetails.PassedExp = passedEngine
+		engineDetails.FailedExp = failedEngine
+		engineDetails.AwaitedExp = awaitedEngine
+		total += totalEngine
+		pass += passedEngine
+		fail += failedEngine
+		SetEngineChaosMetrics(engineDetails)
+	}
+	SetClusterChaosMetrics(total, pass, fail)
+	return nil
 }
 
 // generateClientSets will generate clientSet for kubernetes and litmus

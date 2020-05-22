@@ -20,55 +20,21 @@ import (
 	"fmt"
 	"strings"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/klog"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 )
 
 // Holds list of experiments in a chaosengine
 var chaosExperimentList []string
 
-// GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
-func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
-	chaosEngineList, err := clientSet.LitmuschaosV1alpha1().ChaosEngines("").List(metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-	filteredChaosEngineList := filterMonitoringEnabledEngines(chaosEngineList)
-	if err != nil {
-		return err
-	}
-	var total float64 = 0
-	var pass float64 = 0
-	var fail float64 = 0
-	for _, chaosEngine := range filteredChaosEngineList.Items {
-		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
-		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
-		var engineDetails ChaosEngineDetail
-		engineDetails.Name = chaosEngine.Name
-		engineDetails.Namespace = chaosEngine.Namespace
-		engineDetails.TotalExp = totalEngine
-		engineDetails.PassedExp = passedEngine
-		engineDetails.FailedExp = failedEngine
-		engineDetails.AwaitedExp = awaitedEngine
-		total += totalEngine
-		pass += passedEngine
-		fail += failedEngine
-		setEngineChaosMetrics(engineDetails)
-	}
-	setClusterChaosMetrics(total, pass, fail)
-	return nil
-}
-
-func setClusterChaosMetrics(total float64, pass float64, fail float64) {
+func SetClusterChaosMetrics(total float64, pass float64, fail float64) {
 	ClusterPassedExperiments.WithLabelValues().Set(pass)
 	ClusterFailedExperiments.WithLabelValues().Set(fail)
 	ClusterTotalExperiments.WithLabelValues().Set(total)
 }
-func setEngineChaosMetrics(engineDetails ChaosEngineDetail) {
+func SetEngineChaosMetrics(engineDetails ChaosEngineDetail) {
 	EngineTotalExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.TotalExp)
 	EnginePassedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.PassedExp)
 	EngineFailedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.FailedExp)
