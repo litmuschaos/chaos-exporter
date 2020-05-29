@@ -30,6 +30,8 @@ import (
 
 // Holds list of experiments in a chaosengine
 var chaosExperimentList []string
+// Holds the chaosresult of the running experiment
+var chaosresultMap = make(map[string]bool)
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
@@ -44,9 +46,10 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 	var total float64 = 0
 	var pass float64 = 0
 	var fail float64 = 0
+
 	for _, chaosEngine := range filteredChaosEngineList.Items {
 		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
-		klog.V(2).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine)
+		klog.V(0).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v, TotalRunningExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine, len(chaosresultMap))
 		var engineDetails ChaosEngineDetail
 		engineDetails.Name = chaosEngine.Name
 		engineDetails.Namespace = chaosEngine.Namespace
@@ -57,7 +60,7 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 		total += totalEngine
 		pass += passedEngine
 		fail += failedEngine
-		setEngineChaosMetrics(engineDetails)
+		setEngineChaosMetrics(engineDetails, &chaosEngine)
 	}
 	setClusterChaosMetrics(total, pass, fail)
 	return nil
@@ -68,7 +71,8 @@ func setClusterChaosMetrics(total float64, pass float64, fail float64) {
 	ClusterFailedExperiments.WithLabelValues().Set(fail)
 	ClusterTotalExperiments.WithLabelValues().Set(total)
 }
-func setEngineChaosMetrics(engineDetails ChaosEngineDetail) {
+func setEngineChaosMetrics(engineDetails ChaosEngineDetail, chaosEngine *litmuschaosv1alpha1.ChaosEngine) {
+	RunningExperiment.WithLabelValues(engineDetails.Namespace, engineDetails.Name, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)).Set(float64(len(chaosresultMap)))
 	EngineTotalExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.TotalExp)
 	EnginePassedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.PassedExp)
 	EngineFailedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.FailedExp)
@@ -79,26 +83,31 @@ func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine
 	var total, passed, failed, waiting float64
 	expStatusList := chaosEngine.Status.Experiments
 	total = float64(len(expStatusList))
-	for i, v := range expStatusList {
-		verdict := strings.ToLower(v.Verdict)
+
+	for i :=0; i < len(expStatusList); i++ {
+		verdict := strings.ToLower(expStatusList[i].Verdict)
+		fmt.Println(verdict)
 		switch verdict {
 		case "pass":
 			passed++
+			delete(chaosresultMap, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace))
+
 		case "fail":
 			failed++
+			delete(chaosresultMap, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace))
+
 		case "waiting":
 			waiting++
+
 		case "awaited":
-			defineRunningExperimentMetric(chaosEngine.Name, chaosEngine.Namespace, chaosEngine.Spec.Experiments[i].Name)
+			// Check the unique chaosresult name in hashmap.
+			if chaosresultMap[fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)] == false {
+				// Set the chaosresult name to true, if it's unique.
+				chaosresultMap[fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)] = true
+			}
 		}
 	}
 	return total, passed, failed, waiting
-
-}
-func defineRunningExperimentMetric(engineName string, engineNamespace string, experimentName string) {
-	klog.V(2).Infof("Running Experiment Metrics: EnginaName: %v, EngineNamespace: %v, ExperimentName: %v", engineName, engineNamespace, experimentName)
-	RunningExperiment.WithLabelValues(engineNamespace, engineName, experimentName, fmt.Sprintf("%s-%s", engineName, experimentName)).Set(float64(2))
-
 }
 
 func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
