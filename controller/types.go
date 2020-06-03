@@ -87,7 +87,7 @@ var (
 		[]string{},
 	)
 
-	RunningExperiment = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	EngineRunningExperiment = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "cluster",
 		Subsystem: "overall",
 		Name: "RunningExperiment",

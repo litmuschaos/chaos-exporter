@@ -31,7 +31,7 @@ import (
 // Holds list of experiments in a chaosengine
 var chaosExperimentList []string
 // Holds the chaosresult of the running experiment
-var chaosresultMap = make(map[string]bool)
+var experimentStatusMap = make(map[string]bool)
 
 // GetLitmusChaosMetrics returns chaos metrics for a given chaosengine
 func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
@@ -49,7 +49,7 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 
 	for _, chaosEngine := range filteredChaosEngineList.Items {
 		totalEngine, passedEngine, failedEngine, awaitedEngine := getExperimentMetricsFromEngine(&chaosEngine)
-		klog.V(0).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v, TotalRunningExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine, len(chaosresultMap))
+		klog.V(0).Infof("ChaosEngineMetrics: EngineName: %v, EngineNamespace: %v, TotalExp: %v, PassedExp: %v, FailedExp: %v, TotalRunningExp: %v", chaosEngine.Name, chaosEngine.Namespace, totalEngine, passedEngine, failedEngine, len(experimentStatusMap))
 		var engineDetails ChaosEngineDetail
 		engineDetails.Name = chaosEngine.Name
 		engineDetails.Namespace = chaosEngine.Namespace
@@ -72,7 +72,7 @@ func setClusterChaosMetrics(total float64, pass float64, fail float64) {
 	ClusterTotalExperiments.WithLabelValues().Set(total)
 }
 func setEngineChaosMetrics(engineDetails ChaosEngineDetail, chaosEngine *litmuschaosv1alpha1.ChaosEngine) {
-	RunningExperiment.WithLabelValues(engineDetails.Namespace, engineDetails.Name, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)).Set(float64(len(chaosresultMap)))
+	EngineRunningExperiment.WithLabelValues(engineDetails.Namespace, engineDetails.Name, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)).Set(float64(len(experimentStatusMap)))
 	EngineTotalExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.TotalExp)
 	EnginePassedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.PassedExp)
 	EngineFailedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.FailedExp)
@@ -90,20 +90,20 @@ func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine
 		switch verdict {
 		case "pass":
 			passed++
-			delete(chaosresultMap, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace))
+			delete(experimentStatusMap, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace))
 
 		case "fail":
 			failed++
-			delete(chaosresultMap, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace))
+			delete(experimentStatusMap, fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace))
 
 		case "waiting":
 			waiting++
 
 		case "awaited":
 			// Check the unique chaosresult name in hashmap.
-			if chaosresultMap[fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)] == false {
+			if experimentStatusMap[fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)] == false {
 				// Set the chaosresult name to true, if it's unique.
-				chaosresultMap[fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)] = true
+				experimentStatusMap[fmt.Sprintf("%s-%s", chaosEngine.Name, chaosEngine.Namespace)] = true
 			}
 		}
 	}
