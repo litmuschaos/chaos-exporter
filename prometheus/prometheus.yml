@@ -1,10 +1,97 @@
-global:
-  scrape_interval:     10s
-  evaluation_interval: 10s
-
-scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      ## Scrape the exporter
-      - targets: ['localhost:8080']
-
+# Prometheus tunables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litmus-prometheus-tunables
+  namespace: litmus
+data:
+  storage-retention: 24h
+---
+# Define the openebs prometheus jobs
+kind: ConfigMap
+metadata:
+  name: litmus-prometheus-config
+  namespace: litmus
+apiVersion: v1
+data:
+  prometheus.yml: |-
+    global:
+      external_labels:
+        app: litmuschaos
+      scrape_interval: 10s
+      evaluation_interval: 10s
+    rule_files:
+      - "/etc/prometheus-rules/*.rules"
+    scrape_configs:
+    - job_name: 'chaos-monitor'
+      static_configs:
+        - targets: ['chaos-monitor.litmus.svc.cluster.local:8080']
+---
+# prometheus-deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: litmus-prometheus
+  namespace: litmus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: litmus-prometheus
+  template:
+    metadata:
+      labels:
+        app: litmus-prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.11.0
+          args:
+            - "--config.file=/etc/prometheus/conf/prometheus.yml"
+            # Metrics are stored in an emptyDir volume which
+            # exists as long as the Pod is running on that Node.
+            # The data in an emptyDir volume is safe across container crashes.
+            - "--storage.tsdb.path=/prometheus"
+            # How long to retain samples in the local storage.
+            - "--storage.tsdb.retention=$(STORAGE_RETENTION)"
+          ports:
+            - containerPort: 9090
+          env:
+            # environment vars are stored in prometheus-env configmap.
+            - name: STORAGE_RETENTION
+              valueFrom:
+                configMapKeyRef:
+                  name: litmus-prometheus-tunables
+                  key: storage-retention
+          volumeMounts:
+            # prometheus config file stored in the given mountpath
+            - name: prometheus-server-volume
+              mountPath: /etc/prometheus/conf
+            # metrics collected by prometheus will be stored at the given mountpath.
+            - name: prometheus-storage-volume
+              mountPath: /prometheus
+      volumes:
+        # Prometheus Config file will be stored in this volume
+        - name: prometheus-server-volume
+          configMap:
+            name: litmus-prometheus-config
+        # All the time series stored in this volume in form of .db file.
+        - name: prometheus-storage-volume
+          # containers in the Pod can all read and write the same files here.
+          emptyDir: {}
+---
+# prometheus-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: litmus-prometheus-service
+  namespace: litmus
+spec:
+  selector:
+    app: litmus-prometheus
+  type: NodePort
+  ports:
+    - port: 80 # this Service's port (cluster-internal IP clusterIP)
+      targetPort: 9090 # pods expose this port
+      # Note that this Service will be visible as both NodeIP:nodePort and clusterIp:Port
+---
