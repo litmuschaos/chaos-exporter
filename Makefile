@@ -40,7 +40,7 @@ lint:
 	@go vet $(PACKAGES)
 
 .PHONY: deps
-deps: _build_check_docker godeps bdddeps
+deps: _build_check_docker godeps bdddeps unused-package-check
 
 _build_check_docker:
 	@if [ $(IS_DOCKER_INSTALLED) -eq 1 ]; \
@@ -109,3 +109,12 @@ docker-push:
 	@echo "--> Push chaos-exporter image" 
 	@echo "------------------"
 	REPONAME="litmuschaos" IMGNAME="chaos-exporter" IMGTAG="ci" ./buildscripts/push
+
+unused-package-check:
+	@echo "------------------"
+	@echo "--> Check unused packages for the chaos-operator"
+	@echo "------------------"
+	@tidy=$$(go mod tidy); \
+	if [ -n "$${tidy}" ]; then \
+		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
+	fi
