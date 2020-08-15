@@ -62,7 +62,7 @@ var _ = BeforeSuite(func() {
 		fmt.Println(err)
 	}
 
-	cmd := exec.Command("kubectl", "apply", "-f", "https://litmuschaos.github.io/pages/litmus-operator-ci.yaml")
+	cmd := exec.Command("kubectl", "apply", "-f", "https://litmuschaos.github.io/litmus/litmus-operator-ci.yaml")
 	if err := cmd.Start(); err != nil {
 		log.Fatalf("Failed to create operator: %v", err)
 	}
