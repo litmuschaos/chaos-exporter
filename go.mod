@@ -3,6 +3,7 @@ module github.com/litmuschaos/chaos-exporter
 go 1.13
 
 require (
+	github.com/aws/aws-sdk-go v1.34.18
 	github.com/golang/protobuf v1.4.1 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/litmuschaos/chaos-operator v0.0.0-20200502085045-ae0a262d3baa
