@@ -19,6 +19,7 @@ package controller
 import (
 	"fmt"
 	"os"
+        "github.com/pkg/errors"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -157,7 +158,7 @@ func putAwsMetricData(sess *session.Session, metricName string, unit string, val
 	serviceName := os.Getenv("APP_NAME")
 
 	if namespace == "" || serviceName == "" || clusterName == "" {
-		fmt.Println("You must supply a namespace, clusterName and serviceName values")
+		return errors.Errorf("You must supply a namespace, clusterName and serviceName values")
 	}
 
 	klog.V(0).Infof("Putting new AWS metric: Namespace %v, Metric %v", namespace, metricName)
