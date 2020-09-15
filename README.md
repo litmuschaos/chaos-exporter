@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/litmuschaos/chaos-exporter)](https://goreportcard.com/report/github.com/litmuschaos/chaos-exporter)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter?ref=badge_shield)
 
-- This is a custom prometheus and CloudWatch exporter to expose Litmus Chaos metrics. 
+- This is a custom Prometheus and CloudWatch exporter to expose Litmus Chaos metrics. 
   To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
   visit this link: [Litmus Docs](https://docs.litmuschaos.io/) 
 
