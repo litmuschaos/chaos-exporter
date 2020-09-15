@@ -1,0 +1,59 @@
+## The ENV variables specified in this manifest MUST be provided with appropriate values to obtain metrics on AWS CloudWatch 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: chaos-monitor
+  name: chaos-monitor
+  namespace: litmus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chaos-monitor
+  template:
+    metadata:
+      labels:
+        app: chaos-monitor
+    spec:
+      containers:
+      - image: litmuschaos/chaos-exporter:ci
+        imagePullPolicy: Always
+        name: chaos-exporter
+        env:
+            # Namespace in CloudWatch
+          - name: AWS_CLOUDWATCH_METRIC_NAMESPACE
+            value:
+            # Name of a Kubernetes cluster to collect metrics from 
+          - name: CLUSTER_NAME
+            value: 
+          - name: APP_NAME
+            value: chaos-monitor
+            # Valid access key for you AWS account
+          - name: AWS_ACCESS_KEY_ID
+            value: 
+            # Valid secret key for you AWS account
+          - name: AWS_SECRET_ACCESS_KEY
+            value: 
+            # Region where you want to store CloudWatch metrics
+          - name: AWS_REGION
+            value: 
+      serviceAccount: litmus
+      serviceAccountName: litmus
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: chaos-monitor
+  name: chaos-monitor
+  namespace: litmus
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: chaos-monitor
+  type: ClusterIP

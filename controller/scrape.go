@@ -18,18 +18,23 @@ package controller
 
 import (
 	"fmt"
+	"os"
+        "github.com/pkg/errors"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/klog"
 
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 )
 
 // Holds list of experiments in a chaosengine
 var chaosExperimentList []string
+
 // Holds the chaosresult of the running experiment
 var experimentStatusMap = make(map[string]bool)
 
@@ -61,8 +66,11 @@ func GetLitmusChaosMetrics(clientSet *clientV1alpha1.Clientset) error {
 		pass += passedEngine
 		fail += failedEngine
 		setEngineChaosMetrics(engineDetails, &chaosEngine)
+		setAwsEngineChaosMetrics(engineDetails, &chaosEngine)
 	}
+
 	setClusterChaosMetrics(total, pass, fail)
+	setAwsClusterChaosMetrics(total, pass, fail)
 	return nil
 }
 
@@ -78,13 +86,31 @@ func setEngineChaosMetrics(engineDetails ChaosEngineDetail, chaosEngine *litmusc
 	EngineFailedExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.FailedExp)
 	EngineWaitingExperiments.WithLabelValues(engineDetails.Namespace, engineDetails.Name).Set(engineDetails.AwaitedExp)
 }
+func setAwsEngineChaosMetrics(engineDetails ChaosEngineDetail, chaosEngine *litmuschaosv1alpha1.ChaosEngine) {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+	putAwsMetricData(sess, "chaosengine_passed_experiments", "Count", engineDetails.PassedExp)
+	putAwsMetricData(sess, "chaosengine_failed_experiments", "Count", engineDetails.FailedExp)
+	putAwsMetricData(sess, "chaosengine_experiments_count", "Count", engineDetails.TotalExp)
+	putAwsMetricData(sess, "chaosengine_waiting_experiments", "Count", engineDetails.AwaitedExp)
+}
+
+func setAwsClusterChaosMetrics(total float64, pass float64, fail float64) {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+	putAwsMetricData(sess, "cluster_passed_experiments", "Count", pass)
+	putAwsMetricData(sess, "cluster_failed_experiments", "Count", fail)
+	putAwsMetricData(sess, "cluster_experiments_count", "Count", total)
+}
 
 func getExperimentMetricsFromEngine(chaosEngine *litmuschaosv1alpha1.ChaosEngine) (float64, float64, float64, float64) {
 	var total, passed, failed, waiting float64
 	expStatusList := chaosEngine.Status.Experiments
 	total = float64(len(expStatusList))
 
-	for i :=0; i < len(expStatusList); i++ {
+	for i := 0; i < len(expStatusList); i++ {
 		verdict := strings.ToLower(expStatusList[i].Verdict)
 		fmt.Println(verdict)
 		switch verdict {
@@ -119,4 +145,49 @@ func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineL
 		}
 	}
 	return &filteredEngineList
+}
+
+func putAwsMetricData(sess *session.Session, metricName string, unit string, value float64) error {
+	// Create new Amazon CloudWatch client
+	// snippet-start:[cloudwatch.go.create_custom_metric.call]
+	dimension1 := "ClusterName"
+	dimension2 := "Service"
+	svc := cloudwatch.New(sess)
+	namespace := os.Getenv("AWS_CLOUDWATCH_METRIC_NAMESPACE")
+	clusterName := os.Getenv("CLUSTER_NAME")
+	serviceName := os.Getenv("APP_NAME")
+
+	if namespace == "" || serviceName == "" || clusterName == "" {
+		return errors.Errorf("You must supply a namespace, clusterName and serviceName values")
+	}
+
+	klog.V(0).Infof("Putting new AWS metric: Namespace %v, Metric %v", namespace, metricName)
+
+	_, err := svc.PutMetricData(&cloudwatch.PutMetricDataInput{
+		Namespace: &namespace,
+		MetricData: []*cloudwatch.MetricDatum{
+			&cloudwatch.MetricDatum{
+				MetricName: &metricName,
+				Unit:       &unit,
+				Value:      &value,
+				Dimensions: []*cloudwatch.Dimension{
+					&cloudwatch.Dimension{
+						Name:  &dimension1,
+						Value: &clusterName,
+					},
+					&cloudwatch.Dimension{
+						Name:  &dimension2,
+						Value: &serviceName,
+					},
+				},
+			},
+		},
+	})
+	// snippet-end:[cloudwatch.go.create_custom_metric.call]
+	if err != nil {
+		klog.V(0).Infof("Error during putting metrics to CloudWatch: %v", err)
+		return err
+	}
+
+	return nil
 }
