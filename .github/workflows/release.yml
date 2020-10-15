@@ -1,12 +1,20 @@
 ---
-# This workflow is to perform automatic release on litmus-ansible repository
-# Please provide the release version and release tag in github secrets for the upcoming release.
+# This workflow is to perform automatic release on chaos-exporter repository
 name: AutoRelease
 
-# Executes a job at 10:15am on the 15th day of every month
 on:
-    schedule:
-    - cron:  '0 15 10 15 * *'
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'     
+        required: true
+        default: 'warning'
+      tag:
+        description: 'Release tag'
+        required: true
+      branch:
+        description: 'Release branch name'
+
 
 jobs:
     release:
@@ -14,19 +22,16 @@ jobs:
     runs-on: "ubuntu-latest"
 
     steps:
-
         # create a release branch from master
-        # Provide release branch from the github secret ex. 1.9.x
-        - uses: peterjgrainger/action-create-branch@v1.0.0
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            branch: '${{ secrets.RELEASE_BRANCH }}'
-  
-        # Provide release tag from the github secret ex. 1.9.0
-        - uses: "marvinpinto/action-automatic-releases@latest"
-          with:
-            repo_token: "${{ secrets.GITHUB_TOKEN }}"
-            automatic_release_tag: "${{ secrets.RELEASE_TAG }}"
-            prerelease: false
-            title: "${{ secrets.RELEASE_TAG }}"
+      - uses: peterjgrainger/action-create-branch@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          branch: '${{ github.event.inputs.branch }}'
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "${{ github.event.inputs.tag }}"
+          prerelease: false
+          title: "${{ github.event.inputs.tag }}"
