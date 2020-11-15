@@ -9,6 +9,7 @@ require (
 	github.com/litmuschaos/chaos-operator v0.0.0-20200502085045-ae0a262d3baa
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.6.0
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
