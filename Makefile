@@ -75,14 +75,14 @@ go-build:
 	@echo "------------------"
 	@echo "--> Build Chaos Exporter"
 	@echo "------------------"
-	@go build ./cmd/exporter 
+	@bash build/go-multiarch-build.sh ./cmd/exporter 
 
 docker-build: 
 	@echo "------------------"
 	@echo "--> Build chaos-exporter image" 
 	@echo "------------------"
 	# Dockerfile available in the repo root
-	sudo docker build . -f Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+	@sudo docker buildx build --file Dockerfile --progress plane --platform linux/arm64,linux/amd64 --no-cache --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 .PHONY: test
 test:

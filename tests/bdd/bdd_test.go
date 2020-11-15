@@ -67,6 +67,10 @@ var _ = BeforeSuite(func() {
 		log.Fatalf("Failed to create operator: %v", err)
 	}
 	time.Sleep(30 * time.Second)
+	podDeleteRbac := exec.Command("kubectl", "apply", "-f", "../manifest/pod-delete-rbac.yaml", "-n", "litmus")
+	if err := podDeleteRbac.Start(); err != nil {
+		log.Fatalf("Failed to create pod-delete rbac: %v", err)
+	}
 	experimentCreate := exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos/master?file=charts/generic/experiments.yaml", "-n", "litmus")
 	if err := experimentCreate.Start(); err != nil {
 		log.Fatalf("Failed to create experiment: %v", err)
@@ -140,7 +144,7 @@ var _ = BeforeSuite(func() {
 				Applabel: "app=nginx",
 				AppKind:  "deployment",
 			},
-			ChaosServiceAccount: "litmus",
+			ChaosServiceAccount: "pod-delete-sa",
 			Components: v1alpha1.ComponentParams{
 				Runner: v1alpha1.RunnerInfo{
 					Image: "litmuschaos/chaos-runner:ci",
