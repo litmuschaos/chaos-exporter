@@ -1,3 +1,4 @@
+ 
 # Makefile for building Chaos Exporter
 # Reference Guide - https://www.gnu.org/software/make/manual/make.html
 
@@ -118,3 +119,18 @@ unused-package-check:
 	if [ -n "$${tidy}" ]; then \
 		echo "go mod tidy checking failed!"; echo "$${tidy}"; echo; \
 	fi
+
+.PHONY: build-amd64
+build-amd64:
+	@echo "-------------------------"
+	@echo "--> Build chaos-exporter image" 
+	@echo "-------------------------"
+	@sudo docker build --file Dockerfile --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) . --build-arg TARGETARCH=amd64
+
+.PHONY: push-amd64
+push-amd64:
+
+	@echo "------------------------------"
+	@echo "--> Pushing image" 
+	@echo "------------------------------"
+	@sudo docker push $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)	
