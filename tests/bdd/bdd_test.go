@@ -27,23 +27,25 @@ import (
 	"time"
 
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	clientV1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
+
+	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 
 	//auth for gcp: optional
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 	"github.com/litmuschaos/chaos-exporter/controller"
+	"github.com/litmuschaos/chaos-exporter/pkg/clients"
+	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var kubeconfig = os.Getenv("HOME") + "/.kube/config"
 var config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+var client = clients.ClientSets{}
 
 func TestChaos(t *testing.T) {
 
@@ -52,12 +54,11 @@ func TestChaos(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-
-	litmusClientSet, err := clientV1alpha1.NewForConfig(config)
+	client.KubeClient, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		fmt.Println(err)
 	}
-	kubeClientSet, err := kubernetes.NewForConfig(config)
+	client.LitmusClient, err = chaosClient.NewForConfig(config)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -119,7 +120,7 @@ var _ = BeforeSuite(func() {
 			},
 		},
 	}
-	_, err = kubeClientSet.AppsV1().Deployments("litmus").Create(deployment)
+	_, err := client.KubeClient.AppsV1().Deployments("litmus").Create(deployment)
 	if err != nil {
 		fmt.Println("Deployment is not created and error is ", err)
 	}
@@ -162,7 +163,7 @@ var _ = BeforeSuite(func() {
 		},
 	}
 
-	_, err = litmusClientSet.LitmuschaosV1alpha1().ChaosEngines("litmus").Create(chaosEngine)
+	_, err = client.LitmusClient.ChaosEngines("litmus").Create(chaosEngine)
 	Expect(err).To(BeNil())
 
 	time.Sleep(30 * time.Second)
@@ -174,17 +175,9 @@ var _ = Describe("BDD on chaos-exporter", func() {
 	Context("Chaos Engine failed experiments", func() {
 
 		It("should be a zero failed experiments", func() {
-
-			if err != nil {
-				Fail(err.Error())
-			}
-
 			By("Checking experiments metrics")
-			clientSet, err := clientV1alpha1.NewForConfig(config)
-			if err != nil {
-				fmt.Println(err)
-			}
-			err = controller.GetLitmusChaosMetrics(clientSet)
+
+			err := controller.GetLitmusChaosMetrics(client)
 			Expect(err).To(BeNil())
 
 		})
@@ -213,25 +206,22 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				fmt.Printf("%s\n", string(metrics))
 
 				By("Should be matched with total_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("cluster_overall_experiments_count 1"))
+				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_overall_experiments_run_count{chaosresult_namespace=\"\"} 1"))
 
 				By("Should be matched with failed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("cluster_overall_failed_experiments 0"))
+				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_overall_failed_experiments{chaosresult_namespace=\"\"} 0"))
 
 				By("Should be matched with passed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("cluster_overall_passed_experiments 1"))
-
-				By("Should be matched with total_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`chaosengine_experiments_count{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
+				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_overall_passed_experiments{chaosresult_namespace=\"\"} 1"))
 
 				By("Should be matched with engine_failed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`chaosengine_failed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0`))
+				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_failed_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0`))
 
 				By("Should be matched with engine_passed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`chaosengine_passed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1`))
+				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_passed_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 1`))
 
 				By("Should be matched with engine_waiting_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`chaosengine_waiting_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0`))
+				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_awaited_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0`))
 
 			}
 		})

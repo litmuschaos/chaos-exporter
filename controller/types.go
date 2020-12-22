@@ -24,99 +24,150 @@ var registeredResultMetrics []string
 
 // Declare the fixed chaos metrics. Dynamic (testStatus) metrics are defined in metrics()
 var (
-	EngineTotalExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "chaosengine",
-		Subsystem: "",
-		Name:      "experiments_count",
-		Help:      "Total number of experiments executed by the chaos engine",
-	},
-		[]string{"engine_namespace", "engine_name"},
-	)
-
-	EnginePassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "chaosengine",
+	ResultPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
 		Subsystem: "",
 		Name:      "passed_experiments",
-		Help:      "Total number of passed experiments by the chaos engine",
+		Help:      "Total number of passed experiments",
 	},
-		[]string{"engine_namespace", "engine_name"},
+		[]string{"chaosresult_namespace", "chaosresult_name"},
 	)
 
-	EngineFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "chaosengine",
+	ResultFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
 		Subsystem: "",
 		Name:      "failed_experiments",
-		Help:      "Total number of failed experiments by the chaos engine",
+		Help:      "Total number of failed experiments",
 	},
-		[]string{"engine_namespace", "engine_name"},
+		[]string{"chaosresult_namespace", "chaosresult_name"},
 	)
 
-	EngineWaitingExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "chaosengine",
+	ResultAwaitedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
 		Subsystem: "",
-		Name:      "waiting_experiments",
-		Help:      "Total number of waiting experiments by the chaos engine",
+		Name:      "awaited_experiments",
+		Help:      "Total number of awaited experiments",
 	},
-		[]string{"engine_namespace", "engine_name"},
+		[]string{"chaosresult_namespace", "chaosresult_name"},
 	)
 
-	ClusterTotalExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "cluster",
-		Subsystem: "overall",
-		Name:      "experiments_count",
-		Help:      "Total number of experiments executed in the Cluster",
+	ResultProbeSuccessPercentage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "",
+		Name:      "probe_success_percentage",
+		Help:      "ProbeSuccesPercentage for the experiments",
 	},
-		[]string{},
+		[]string{"chaosresult_namespace", "chaosresult_name"},
 	)
 
-	ClusterPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "cluster",
+	ExperimentStartTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "",
+		Name:      "experiment_start_time",
+		Help:      "start time of the experiments",
+	},
+		[]string{"chaosresult_namespace", "chaosresult_name"},
+	)
+
+	ExperimentEndTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "",
+		Name:      "experiment_end_time",
+		Help:      "end time of the experiments",
+	},
+		[]string{"chaosresult_namespace", "chaosresult_name"},
+	)
+
+	ExperimentChaosInjectedTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "",
+		Name:      "experiment_chaos_injected_time",
+		Help:      "chaos injected time of the experiments",
+	},
+		[]string{"chaosresult_namespace", "chaosresult_name"},
+	)
+
+	ExperimentTotalDuration = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "",
+		Name:      "experiment_total_duration",
+		Help:      "total duration of the experiments",
+	},
+		[]string{"chaosresult_namespace", "chaosresult_name"},
+	)
+
+	TotalPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
 		Subsystem: "overall",
 		Name:      "passed_experiments",
-		Help:      "Total number of passed experiments in the Cluster",
+		Help:      "Total number of passed experiments",
 	},
-		[]string{},
+		[]string{"chaosresult_namespace"},
 	)
 
-	ClusterFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "cluster",
+	TotalFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
 		Subsystem: "overall",
 		Name:      "failed_experiments",
-		Help:      "Total number of failed experiments in the Cluster",
+		Help:      "Total number of failed experiments",
 	},
-		[]string{},
+		[]string{"chaosresult_namespace"},
 	)
 
-	EngineRunningExperiment = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "cluster",
+	TotalAwaitedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
 		Subsystem: "overall",
-		Name: "RunningExperiment",
-		Help: "Running Experiment with ChaosEngine Details",
+		Name:      "awaited_experiments",
+		Help:      "Total number of awaited experiments",
 	},
-		[]string{"engine_namespace", "engine_name", "result_name"},
+		[]string{"chaosresult_namespace"},
+	)
+
+	ExperimentsRunCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "overall",
+		Name:      "experiments_run_count",
+		Help:      "Total experiments run",
+	},
+		[]string{"chaosresult_namespace"},
+	)
+
+	ExperimentsInstalledCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "overall",
+		Name:      "experiments_installed_count",
+		Help:      "Total number of experiments",
+	},
+		[]string{"chaosresult_namespace"},
 	)
 )
 
-// ChaosMetricsSpec contains the specs related to chaos metrics
-type ChaosMetricsSpec struct {
-	ExpTotal   float64
-	PassTotal  float64
-	FailTotal  float64
-	ResultList map[string]float64
+// ChaosResultDetails contains chaosresult details
+type ChaosResultDetails struct {
+	Name                  string
+	Namespace             string
+	PassedExperiments     float64
+	FailedExperiments     float64
+	AwaitedExperiments    float64
+	ProbeSuccesPercentage float64
+	StartTime             float64
+	EndTime               float64
+	InjectionTime         float64
+	TotalDuration         float64
 }
 
-// ChaosExpResult contains the structure of Chaos Result
-type ChaosExpResult struct {
-	TotalExpCount  float64
-	TotalPassedExp float64
-	TotalFailedExp float64
+// NamespacedScopeMetrics contains metrics for the chaos namespace
+type NamespacedScopeMetrics struct {
+	PassedExperiments         float64
+	FailedExperiments         float64
+	AwaitedExperiments        float64
+	ExperimentRunCount        float64
+	ExperimentsInstalledCount float64
 }
 
-type ChaosEngineDetail struct {
-	Name       string
-	Namespace  string
-	TotalExp   float64
-	PassedExp  float64
-	FailedExp  float64
-	AwaitedExp float64
+// AWSConfig contains aws configuration details
+type AWSConfig struct {
+	Namespace   string
+	ClusterName string
+	Service     string
 }

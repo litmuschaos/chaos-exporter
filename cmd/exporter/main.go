@@ -17,51 +17,40 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"net/http"
 
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/klog"
+	"github.com/sirupsen/logrus"
 
 	"github.com/litmuschaos/chaos-exporter/controller"
+	"github.com/litmuschaos/chaos-exporter/pkg/clients"
+	"github.com/litmuschaos/chaos-exporter/pkg/log"
 )
 
-// Declare general variables (cluster ops, error handling, misc)
-var kubeconfig *string
-var config *rest.Config
-var err error
-
-// getKubeConfig setup the config for access cluster resource
-func getKubeConfig() (*rest.Config, error) {
-	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	flag.Parse()
-	// Use in-cluster config if kubeconfig path is specified
-	if *kubeconfig == "" {
-		config, err = rest.InClusterConfig()
-		if err != nil {
-			return config, err
-		}
-	}
-	config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		return config, err
-	}
-	return config, err
+func init() {
+	// Log as JSON instead of the default ASCII formatter.
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:          true,
+		DisableSorting:         true,
+		DisableLevelTruncation: true,
+	})
 }
 
 func main() {
-	klog.InitFlags(nil)
-	// Setting up kubeconfig
-	config, err := getKubeConfig()
-	if err != nil {
-		panic(err.Error())
+	clients := clients.ClientSets{}
+
+	//Getting kubeConfig and Generate ClientSets
+	if err := clients.GenerateClientSetFromKubeConfig(); err != nil {
+		log.Fatalf("Unable to Get the kubeconfig, err: %v", err)
 	}
+
 	// Trigger the chaos metrics collection
-	go controller.Exporter(config)
+	go controller.Exporter(clients)
+
 	//This section will start the HTTP server and expose metrics on the /metrics endpoint.
 	http.Handle("/metrics", promhttp.Handler())
-	klog.Info("Beginning to serve on port :8080")
-	klog.Fatal(http.ListenAndServe(":8080", nil))
+	log.Info("Beginning to serve on port :8080")
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
