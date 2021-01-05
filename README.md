@@ -9,16 +9,13 @@
   visit this link: [Litmus Docs](https://docs.litmuschaos.io/) 
 
 - Typically deployed along with the chaos-operator deployment, which, 
-  in-turn is associated with all chaosengines in the cluster.
+  in-turn is associated with all chaosresults in the cluster.
 
 - Two types of metrics are exposed: 
 
-  - Common: These metrics are derived from the chaosengine spec/status and are common 
-    to every chaosengine.
+  - NamespacedScoped: These metrics are derived from the all the chaosresults present inside `WATCH_NAMESPACE`. If `WATCH_NAMESPACE` is not defined then it derived metrics from all namespaces. It exposes total_passed_experiment, total_failed_experiment, total_awaited_experiment, experiment_run_count, experiment_installed_count metrices.
 
-  - Dymanic: Individual experiment run status. The list of experiments may 
-    vary across ChaosEngines (or newer tests may be patched into it. 
-    The exporter reports experiment status as per list in the chaosengine
+  - ExperimentScoped: Individual experiment run status. It exposes passed_experiment, failed_experiment, awaited_experiment, probe_success_percentage, startTime, endTime, totalDuration, chaosInjectTime metrices.
 
 - The metrics are of type Gauge, w/ each of the status metrics mapped to a 
   numeric value(not-executed:0, fail:1, running:2, pass:3)
