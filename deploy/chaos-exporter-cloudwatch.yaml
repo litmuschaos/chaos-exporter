@@ -24,22 +24,23 @@ spec:
         env:
             # Namespace in CloudWatch
           - name: AWS_CLOUDWATCH_METRIC_NAMESPACE
-            value:
+            value: ''
             # Name of a Kubernetes cluster to collect metrics from 
           - name: CLUSTER_NAME
-            value: 
+            value: ''
           - name: APP_NAME
             value: chaos-monitor
             # Valid access key for you AWS account
           - name: AWS_ACCESS_KEY_ID
-            value: 
+            value: ''
             # Valid secret key for you AWS account
           - name: AWS_SECRET_ACCESS_KEY
-            value: 
+            value: ''
             # Region where you want to store CloudWatch metrics
           - name: AWS_REGION
-            value: 
-      serviceAccount: litmus
+            value: ''
+          - name: CHAOS_NAMESPACE
+            value: 'litmus'
       serviceAccountName: litmus
 ---
 apiVersion: v1
