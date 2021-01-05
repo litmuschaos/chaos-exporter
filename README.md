@@ -52,45 +52,42 @@
 ### Example Metrics
 
 ```
-# HELP chaosengine_experiments_count Total number of experiments executed by the chaos engine
-# TYPE chaosengine_experiments_count gauge
-chaosengine_experiments_count{engine_name="engine-nginx",engine_namespace="litmus"} 1
-[ "ContainerInsights/ChaosMonitor", "chaosengine_experiments_count", "ClusterName", "sandbox", "Service", "chaos-monitor" ]
-
-# HELP chaosengine_failed_experiments Total number of failed experiments by the chaos engine
-# TYPE chaosengine_failed_experiments gauge
-chaosengine_failed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0
-[ "ContainerInsights/ChaosMonitor", "chaosengine_failed_experiments", "ClusterName", "sandbox", "Service", "chaos-monitor" ]
-
-# HELP chaosengine_passed_experiments Total number of passed experiments by the chaos engine
-# TYPE chaosengine_passed_experiments gauge
-chaosengine_passed_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 1
-[ "ContainerInsights/ChaosMonitor", "chaosengine_passed_experiments", "ClusterName", "sandbox", "Service", "chaos-monitor" ]
-
-# HELP chaosengine_waiting_experiments Total number of waiting experiments by the chaos engine
-# TYPE chaosengine_waiting_experiments gauge
-chaosengine_waiting_experiments{engine_name="engine-nginx",engine_namespace="litmus"} 0
-[ "ContainerInsights/ChaosMonitor", "chaosengine_waiting_experiments", "ClusterName", "sandbox", "Service", "chaos-monitor" ]
-
-# HELP cluster_overall_RunningExperiment Running Experiment with ChaosEngine Details
-# TYPE cluster_overall_RunningExperiment gauge
-cluster_overall_RunningExperiment{engine_name="engine-nginx",engine_namespace="litmus",experiment_name="pod-delete",result_name="engine-nginx-pod-delete"} 2
-
-# HELP cluster_overall_experiments_count Total number of experiments executed in the Cluster
-# TYPE cluster_overall_experiments_count gauge
-cluster_overall_experiments_count 1
-[ "ContainerInsights/ChaosMonitor", "cluster_experiments_count", "ClusterName", "sandbox", "Service", "chaos-monitor" ]
-
-# HELP cluster_overall_failed_experiments Total number of failed experiments in the Cluster
-# TYPE cluster_overall_failed_experiments gauge
-cluster_overall_failed_experiments 0
-[ "ContainerInsights/ChaosMonitor", "cluster_failed_experiments", "ClusterName", "sandbox", "Service", "chaos-monitor" ]
-
-# HELP cluster_overall_passed_experiments Total number of passed experiments in the Cluster
-# TYPE cluster_overall_passed_experiments gauge
-cluster_overall_passed_experiments 1
-[ "ContainerInsights/ChaosMonitor", "cluster_passed_experiments", "ClusterName", "sandbox", "Service", "chaos-monitor" ]
-...
+# HELP litmuschaos_awaited_experiments Total number of awaited experiments
+# TYPE litmuschaos_awaited_experiments gauge
+litmuschaos_awaited_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0
+# HELP litmuschaos_experiment_chaos_injected_time chaos injected time of the experiments
+# TYPE litmuschaos_experiment_chaos_injected_time gauge
+litmuschaos_experiment_chaos_injected_time{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 1.609783037e+09
+# HELP litmuschaos_experiment_end_time end time of the experiments
+# TYPE litmuschaos_experiment_end_time gauge
+litmuschaos_experiment_end_time{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 1.609783055e+09
+# HELP litmuschaos_experiment_start_time start time of the experiments
+# TYPE litmuschaos_experiment_start_time gauge
+litmuschaos_experiment_start_time{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 1.609783003e+09
+# HELP litmuschaos_failed_experiments Total number of failed experiments
+# TYPE litmuschaos_failed_experiments gauge
+litmuschaos_failed_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0
+# HELP litmuschaos_overall_awaited_experiments Total number of awaited experiments
+# TYPE litmuschaos_overall_awaited_experiments gauge
+litmuschaos_overall_awaited_experiments{chaosresult_namespace=""} 0
+# HELP litmuschaos_overall_experiments_installed_count Total number of experiments
+# TYPE litmuschaos_overall_experiments_installed_count gauge
+litmuschaos_overall_experiments_installed_count{chaosresult_namespace=""} 1
+# HELP litmuschaos_overall_experiments_run_count Total experiments run
+# TYPE litmuschaos_overall_experiments_run_count gauge
+litmuschaos_overall_experiments_run_count{chaosresult_namespace=""} 4
+# HELP litmuschaos_overall_failed_experiments Total number of failed experiments
+# TYPE litmuschaos_overall_failed_experiments gauge
+litmuschaos_overall_failed_experiments{chaosresult_namespace=""} 0
+# HELP litmuschaos_overall_passed_experiments Total number of passed experiments
+# TYPE litmuschaos_overall_passed_experiments gauge
+litmuschaos_overall_passed_experiments{chaosresult_namespace=""} 4
+# HELP litmuschaos_passed_experiments Total number of passed experiments
+# TYPE litmuschaos_passed_experiments gauge
+litmuschaos_passed_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 4
+# HELP litmuschaos_probe_success_percentage ProbeSuccesPercentage for the experiments
+# TYPE litmuschaos_probe_success_percentage gauge
+litmuschaos_probe_success_percentage{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 100
 ```
 
 
