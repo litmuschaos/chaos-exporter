@@ -114,11 +114,20 @@ func GetLitmusChaosMetrics(clients clients.ClientSets) error {
 
 // setNamespacedChaosMetrics sets metrics for the all chaosresults
 func setNamespacedChaosMetrics(namespacedScopeMetrics NamespacedScopeMetrics, watchNamespace string) {
-	TotalAwaitedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.AwaitedExperiments)
-	TotalPassedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.PassedExperiments)
-	TotalFailedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.FailedExperiments)
-	ExperimentsRunCount.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.ExperimentRunCount)
-	ExperimentsInstalledCount.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.ExperimentsInstalledCount)
+	switch watchNamespace {
+	case "":
+		ClusterScopedTotalAwaitedExperiments.WithLabelValues().Set(namespacedScopeMetrics.AwaitedExperiments)
+		ClusterScopedTotalPassedExperiments.WithLabelValues().Set(namespacedScopeMetrics.PassedExperiments)
+		ClusterScopedTotalFailedExperiments.WithLabelValues().Set(namespacedScopeMetrics.FailedExperiments)
+		ClusterScopedExperimentsRunCount.WithLabelValues().Set(namespacedScopeMetrics.ExperimentRunCount)
+		ClusterScopedExperimentsInstalledCount.WithLabelValues().Set(namespacedScopeMetrics.ExperimentsInstalledCount)
+	default:
+		NamespaceScopedTotalAwaitedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.AwaitedExperiments)
+		NamespaceScopedTotalPassedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.PassedExperiments)
+		NamespaceScopedTotalFailedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.FailedExperiments)
+		NamespaceScopedExperimentsRunCount.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.ExperimentRunCount)
+		NamespaceScopedExperimentsInstalledCount.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.ExperimentsInstalledCount)
+	}
 }
 
 // setResultChaosMetrics sets metrics for the given chaosresult
@@ -248,7 +257,7 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string) (litmuscha
 func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) error {
 	probeSuccesPercentage := float64(0)
 	verdict := strings.ToLower(chaosResult.Status.ExperimentStatus.Verdict)
-	if chaosResult.Status.ExperimentStatus.ProbeSuccessPercentage != "Awaited" {
+	if chaosResult.Status.ExperimentStatus.ProbeSuccessPercentage != "Awaited" && chaosResult.Status.ExperimentStatus.ProbeSuccessPercentage != "" {
 		probeSuccesPercentage, err = strconv.ParseFloat(chaosResult.Status.ExperimentStatus.ProbeSuccessPercentage, 64)
 		if err != nil {
 			return err
