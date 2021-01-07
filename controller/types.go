@@ -96,49 +96,94 @@ var (
 		[]string{"chaosresult_namespace", "chaosresult_name"},
 	)
 
-	TotalPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	NamespaceScopedTotalPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "litmuschaos",
-		Subsystem: "overall",
+		Subsystem: "namespace_scoped",
 		Name:      "passed_experiments",
-		Help:      "Total number of passed experiments",
+		Help:      "Total number of passed experiments in watch namespace",
 	},
 		[]string{"chaosresult_namespace"},
 	)
 
-	TotalFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	NamespaceScopedTotalFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "litmuschaos",
-		Subsystem: "overall",
+		Subsystem: "namespace_scoped",
 		Name:      "failed_experiments",
-		Help:      "Total number of failed experiments",
+		Help:      "Total number of failed experiments in watch namespace",
 	},
 		[]string{"chaosresult_namespace"},
 	)
 
-	TotalAwaitedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	NamespaceScopedTotalAwaitedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "litmuschaos",
-		Subsystem: "overall",
+		Subsystem: "namespace_scoped",
 		Name:      "awaited_experiments",
-		Help:      "Total number of awaited experiments",
+		Help:      "Total number of awaited experiments in watch namespace",
 	},
 		[]string{"chaosresult_namespace"},
 	)
 
-	ExperimentsRunCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	NamespaceScopedExperimentsRunCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "litmuschaos",
-		Subsystem: "overall",
+		Subsystem: "namespace_scoped",
 		Name:      "experiments_run_count",
-		Help:      "Total experiments run",
+		Help:      "Total experiments run in watch namespace",
 	},
 		[]string{"chaosresult_namespace"},
 	)
 
-	ExperimentsInstalledCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+	NamespaceScopedExperimentsInstalledCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "litmuschaos",
-		Subsystem: "overall",
+		Subsystem: "namespace_scoped",
 		Name:      "experiments_installed_count",
-		Help:      "Total number of experiments",
+		Help:      "Total number of experiments in watch namespace",
 	},
 		[]string{"chaosresult_namespace"},
+	)
+
+	ClusterScopedTotalPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "cluster_scoped",
+		Name:      "passed_experiments",
+		Help:      "Total number of passed experiments in all namespaces",
+	},
+		[]string{},
+	)
+
+	ClusterScopedTotalFailedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "cluster_scoped",
+		Name:      "failed_experiments",
+		Help:      "Total number of failed experiments in all namespaces",
+	},
+		[]string{},
+	)
+
+	ClusterScopedTotalAwaitedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "cluster_scoped",
+		Name:      "awaited_experiments",
+		Help:      "Total number of awaited experiments in all namespaces",
+	},
+		[]string{},
+	)
+
+	ClusterScopedExperimentsRunCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "cluster_scoped",
+		Name:      "experiments_run_count",
+		Help:      "Total experiments run in all namespaces",
+	},
+		[]string{},
+	)
+
+	ClusterScopedExperimentsInstalledCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "cluster_scoped",
+		Name:      "experiments_installed_count",
+		Help:      "Total number of experiments in all namespaces",
+	},
+		[]string{},
 	)
 )
 

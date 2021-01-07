@@ -206,13 +206,13 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				fmt.Printf("%s\n", string(metrics))
 
 				By("Should be matched with total_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_overall_experiments_run_count{chaosresult_namespace=\"\"} 1"))
+				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_cluster_scoped_experiments_run_count 1"))
 
 				By("Should be matched with failed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_overall_failed_experiments{chaosresult_namespace=\"\"} 0"))
+				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_cluster_scoped_failed_experiments 0"))
 
 				By("Should be matched with passed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_overall_passed_experiments{chaosresult_namespace=\"\"} 1"))
+				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_cluster_scoped_passed_experiments 1"))
 
 				By("Should be matched with engine_failed_experiments regx")
 				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_failed_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0`))
