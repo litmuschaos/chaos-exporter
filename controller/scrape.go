@@ -26,6 +26,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
@@ -33,18 +34,20 @@ import (
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	clientTypes "k8s.io/apimachinery/pkg/types"
 )
 
 var err error
 
 // GetLitmusChaosMetrics derive and send the chaos metrics
-func GetLitmusChaosMetrics(clients clients.ClientSets) error {
+func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList) error {
 	// initialising the parameters for the namespaced scope metrics
 	namespacedScopeMetrics := NamespacedScopeMetrics{
-		PassedExperiments:  0,
-		FailedExperiments:  0,
-		AwaitedExperiments: 0,
-		ExperimentRunCount: 0,
+		PassedExperiments:         0,
+		FailedExperiments:         0,
+		AwaitedExperiments:        0,
+		ExperimentRunCount:        0,
+		ExperimentsInstalledCount: 0,
 	}
 	// getting all the data required for aws configuration
 	awsConfig := AWSConfig{
@@ -58,6 +61,11 @@ func GetLitmusChaosMetrics(clients clients.ClientSets) error {
 	if err != nil {
 		return err
 	}
+
+	// unset the metrics correspond to deleted chaosresults
+	gaugeMetrics.unsetDeletedChaosResults(overallChaosResults, &resultList)
+	// updating the overall chaosresults items to latest
+	overallChaosResults.Items = resultList.Items
 
 	// iterating over all chaosresults and derive all the metrics data it generates metrics per chaosresult
 	// and aggregate metrics of all results present inside chaos namespace, if chaos namespace is defined
@@ -94,17 +102,18 @@ func GetLitmusChaosMetrics(clients clients.ClientSets) error {
 		namespacedScopeMetrics.PassedExperiments += resultDetails.PassedExperiments
 		namespacedScopeMetrics.FailedExperiments += resultDetails.FailedExperiments
 		namespacedScopeMetrics.ExperimentsInstalledCount++
-		namespacedScopeMetrics.ExperimentRunCount = resultDetails.AwaitedExperiments + resultDetails.PassedExperiments + resultDetails.FailedExperiments
+		namespacedScopeMetrics.ExperimentRunCount += resultDetails.AwaitedExperiments + resultDetails.PassedExperiments + resultDetails.FailedExperiments
 		// setting chaosresult metrics for the given chaosresult
-		setResultChaosMetrics(resultDetails)
+		gaugeMetrics.setResultChaosMetrics(resultDetails)
 
 		// setting chaosresult aws metrics for the given chaosresult, which can be used for cloudwatch
 		if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
 			awsConfig.setAwsResultChaosMetrics(resultDetails)
 		}
 	}
+
 	//setting aggregate metrics from the all chaosresults
-	setNamespacedChaosMetrics(namespacedScopeMetrics, watchNamespace)
+	gaugeMetrics.setNamespacedChaosMetrics(namespacedScopeMetrics, watchNamespace)
 	//setting aggregate aws metrics from the all chaosresults, which can be used for cloudwatch
 	if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
 		awsConfig.setAwsNamespacedChaosMetrics(namespacedScopeMetrics)
@@ -113,33 +122,45 @@ func GetLitmusChaosMetrics(clients clients.ClientSets) error {
 }
 
 // setNamespacedChaosMetrics sets metrics for the all chaosresults
-func setNamespacedChaosMetrics(namespacedScopeMetrics NamespacedScopeMetrics, watchNamespace string) {
+func (gaugeMetrics *GaugeMetrics) setNamespacedChaosMetrics(namespacedScopeMetrics NamespacedScopeMetrics, watchNamespace string) {
 	switch watchNamespace {
 	case "":
-		ClusterScopedTotalAwaitedExperiments.WithLabelValues().Set(namespacedScopeMetrics.AwaitedExperiments)
-		ClusterScopedTotalPassedExperiments.WithLabelValues().Set(namespacedScopeMetrics.PassedExperiments)
-		ClusterScopedTotalFailedExperiments.WithLabelValues().Set(namespacedScopeMetrics.FailedExperiments)
-		ClusterScopedExperimentsRunCount.WithLabelValues().Set(namespacedScopeMetrics.ExperimentRunCount)
-		ClusterScopedExperimentsInstalledCount.WithLabelValues().Set(namespacedScopeMetrics.ExperimentsInstalledCount)
+		gaugeMetrics.ClusterScopedTotalAwaitedExperiments.WithLabelValues().Set(namespacedScopeMetrics.AwaitedExperiments)
+		gaugeMetrics.ClusterScopedTotalPassedExperiments.WithLabelValues().Set(namespacedScopeMetrics.PassedExperiments)
+		gaugeMetrics.ClusterScopedTotalFailedExperiments.WithLabelValues().Set(namespacedScopeMetrics.FailedExperiments)
+		gaugeMetrics.ClusterScopedExperimentsRunCount.WithLabelValues().Set(namespacedScopeMetrics.ExperimentRunCount)
+		gaugeMetrics.ClusterScopedExperimentsInstalledCount.WithLabelValues().Set(namespacedScopeMetrics.ExperimentsInstalledCount)
 	default:
-		NamespaceScopedTotalAwaitedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.AwaitedExperiments)
-		NamespaceScopedTotalPassedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.PassedExperiments)
-		NamespaceScopedTotalFailedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.FailedExperiments)
-		NamespaceScopedExperimentsRunCount.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.ExperimentRunCount)
-		NamespaceScopedExperimentsInstalledCount.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.ExperimentsInstalledCount)
+		gaugeMetrics.NamespaceScopedTotalAwaitedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.AwaitedExperiments)
+		gaugeMetrics.NamespaceScopedTotalPassedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.PassedExperiments)
+		gaugeMetrics.NamespaceScopedTotalFailedExperiments.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.FailedExperiments)
+		gaugeMetrics.NamespaceScopedExperimentsRunCount.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.ExperimentRunCount)
+		gaugeMetrics.NamespaceScopedExperimentsInstalledCount.WithLabelValues(watchNamespace).Set(namespacedScopeMetrics.ExperimentsInstalledCount)
 	}
 }
 
 // setResultChaosMetrics sets metrics for the given chaosresult
-func setResultChaosMetrics(resultDetails ChaosResultDetails) {
-	ResultAwaitedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.AwaitedExperiments)
-	ResultPassedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.PassedExperiments)
-	ResultFailedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.FailedExperiments)
-	ResultProbeSuccessPercentage.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.ProbeSuccesPercentage)
-	ExperimentStartTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.StartTime)
-	ExperimentEndTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.EndTime)
-	ExperimentChaosInjectedTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.InjectionTime)
-	ExperimentTotalDuration.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.TotalDuration)
+func (gaugeMetrics *GaugeMetrics) setResultChaosMetrics(resultDetails ChaosResultDetails) {
+	gaugeMetrics.ResultAwaitedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.AwaitedExperiments)
+	gaugeMetrics.ResultPassedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.PassedExperiments)
+	gaugeMetrics.ResultFailedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.FailedExperiments)
+	gaugeMetrics.ResultProbeSuccessPercentage.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.ProbeSuccesPercentage)
+	gaugeMetrics.ExperimentStartTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.StartTime)
+	gaugeMetrics.ExperimentEndTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.EndTime)
+	gaugeMetrics.ExperimentChaosInjectedTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.InjectionTime)
+	gaugeMetrics.ExperimentTotalDuration.WithLabelValues(resultDetails.Namespace, resultDetails.Name).Set(resultDetails.TotalDuration)
+}
+
+// unsetResultChaosMetrics sets metrics for the given chaosresult
+func (gaugeMetrics *GaugeMetrics) unsetResultChaosMetrics(chaosresult litmuschaosv1alpha1.ChaosResult) {
+	gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name)
+	gaugeMetrics.ResultPassedExperiments.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name)
+	gaugeMetrics.ResultFailedExperiments.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name)
+	gaugeMetrics.ResultProbeSuccessPercentage.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name)
+	gaugeMetrics.ExperimentStartTime.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name)
+	gaugeMetrics.ExperimentEndTime.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name)
+	gaugeMetrics.ExperimentChaosInjectedTime.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name)
+	gaugeMetrics.ExperimentTotalDuration.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name)
 }
 
 // setAwsResultChaosMetrics sets aws metrics for the given chaosresult
@@ -241,6 +262,10 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string) (litmuscha
 	if err != nil {
 		return litmuschaosv1alpha1.ChaosResultList{}, err
 	}
+	if len(chaosResultList.Items) == 0 {
+		log.Warnf("No chaosresult found!")
+		return litmuschaosv1alpha1.ChaosResultList{}, nil
+	}
 
 	// pick only those chaosresults, which correspond to the filtered chaosengines
 	for _, chaosresult := range chaosResultList.Items {
@@ -263,14 +288,19 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 			return err
 		}
 	}
+	engine, err := clients.LitmusClient.ChaosEngines(chaosResult.Namespace).Get(chaosResult.Spec.EngineName, v1.GetOptions{})
+	if err != nil {
+		return err
+	}
 	// deriving all the events present inside specific chaosengine
-	events, err := getEventsForSpecificInvolvedResource(clients, chaosResult.Spec.EngineName, chaosResult.Namespace)
+	events, err := getEventsForSpecificInvolvedResource(clients, engine.UID, chaosResult.Namespace)
 	if err != nil {
 		return err
 	}
 
 	// setting all the values inside resultdetails struct
 	resultDetails.setName(chaosResult.Name).
+		setUID(chaosResult.UID).
 		setNamespace(chaosResult.Namespace).
 		setProbeSuccesPercentage(probeSuccesPercentage).
 		setStartTime(events).
@@ -294,6 +324,12 @@ func (resultDetails *ChaosResultDetails) setName(name string) *ChaosResultDetail
 // setNamespace sets namespace inside resultDetails struct
 func (resultDetails *ChaosResultDetails) setNamespace(namespace string) *ChaosResultDetails {
 	resultDetails.Namespace = namespace
+	return resultDetails
+}
+
+// setUID sets result uid inside the resultDetails struct
+func (resultDetails *ChaosResultDetails) setUID(uid clientTypes.UID) *ChaosResultDetails {
+	resultDetails.UID = uid
 	return resultDetails
 }
 
@@ -372,7 +408,7 @@ func (resultDetails *ChaosResultDetails) setTotalDuration() *ChaosResultDetails 
 }
 
 // getEventsForSpecificInvolvedResource derive all the events correspond to the specific resource
-func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceName, chaosNamespace string) (corev1.EventList, error) {
+func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceUID clientTypes.UID, chaosNamespace string) (corev1.EventList, error) {
 	finalEventList := corev1.EventList{}
 	eventsList, err := clients.KubeClient.CoreV1().Events(chaosNamespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -380,7 +416,7 @@ func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceNa
 	}
 
 	for _, event := range eventsList.Items {
-		if event.InvolvedObject.Name == resourceName {
+		if event.InvolvedObject.UID == resourceUID {
 			finalEventList.Items = append(finalEventList.Items, event)
 		}
 	}
@@ -390,7 +426,7 @@ func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceNa
 // getPassedEventsInResult count the passed events inside given chaosresult
 func (resultDetails ChaosResultDetails) getPassedEventsInResult(clients clients.ClientSets) (int, error) {
 	passedEventCount := 0
-	eventsList, err := getEventsForSpecificInvolvedResource(clients, resultDetails.Name, resultDetails.Namespace)
+	eventsList, err := getEventsForSpecificInvolvedResource(clients, resultDetails.UID, resultDetails.Namespace)
 	if err != nil {
 		return passedEventCount, err
 	}
@@ -405,7 +441,7 @@ func (resultDetails ChaosResultDetails) getPassedEventsInResult(clients clients.
 // getFailedEventsInResult count the passed events inside given chaosresult
 func (resultDetails ChaosResultDetails) getFailedEventsInResult(clients clients.ClientSets) (int, error) {
 	failedEventCount := 0
-	eventsList, err := getEventsForSpecificInvolvedResource(clients, resultDetails.Name, resultDetails.Namespace)
+	eventsList, err := getEventsForSpecificInvolvedResource(clients, resultDetails.UID, resultDetails.Namespace)
 	if err != nil {
 		return failedEventCount, err
 	}
@@ -423,4 +459,21 @@ func maximum(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+// unsetDeletedChaosResults unset the metrics correspond to deleted chaosresults
+func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newChaosResults *litmuschaosv1alpha1.ChaosResultList) {
+
+	for _, oldResult := range oldChaosResults.Items {
+		found := false
+		for _, newResult := range newChaosResults.Items {
+			if oldResult.UID == newResult.UID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			gaugeMetrics.unsetResultChaosMetrics(oldResult)
+		}
+	}
 }

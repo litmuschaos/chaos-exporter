@@ -21,6 +21,7 @@ import (
 
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -29,32 +30,37 @@ func Exporter(clients clients.ClientSets) {
 	log.Info("Started creating Metrics")
 	// Register the fixed (count) chaos metrics
 	log.Info("Registering Fixed Metrics")
-	registerFixedMetrics()
+
+	gaugeMetrics := GaugeMetrics{}
+	overallChaosResults := litmuschaosv1alpha1.ChaosResultList{}
+
+	gaugeMetrics.InitializeGaugeMetrics().
+		RegisterFixedMetrics()
 
 	for {
-		if err := GetLitmusChaosMetrics(clients); err != nil {
+		if err := gaugeMetrics.GetLitmusChaosMetrics(clients, &overallChaosResults); err != nil {
 			log.Errorf("err: %v", err)
 		}
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
-func registerFixedMetrics() {
-	prometheus.MustRegister(ResultPassedExperiments)
-	prometheus.MustRegister(ResultFailedExperiments)
-	prometheus.MustRegister(ResultAwaitedExperiments)
-	prometheus.MustRegister(ResultProbeSuccessPercentage)
-	prometheus.MustRegister(ExperimentStartTime)
-	prometheus.MustRegister(ExperimentEndTime)
-	prometheus.MustRegister(ExperimentChaosInjectedTime)
-	prometheus.MustRegister(ClusterScopedTotalPassedExperiments)
-	prometheus.MustRegister(ClusterScopedTotalFailedExperiments)
-	prometheus.MustRegister(ClusterScopedTotalAwaitedExperiments)
-	prometheus.MustRegister(ClusterScopedExperimentsRunCount)
-	prometheus.MustRegister(ClusterScopedExperimentsInstalledCount)
-	prometheus.MustRegister(NamespaceScopedTotalPassedExperiments)
-	prometheus.MustRegister(NamespaceScopedTotalFailedExperiments)
-	prometheus.MustRegister(NamespaceScopedTotalAwaitedExperiments)
-	prometheus.MustRegister(NamespaceScopedExperimentsRunCount)
-	prometheus.MustRegister(NamespaceScopedExperimentsInstalledCount)
+func (gaugeMetrics *GaugeMetrics) RegisterFixedMetrics() {
+	prometheus.MustRegister(gaugeMetrics.ResultPassedExperiments)
+	prometheus.MustRegister(gaugeMetrics.ResultFailedExperiments)
+	prometheus.MustRegister(gaugeMetrics.ResultAwaitedExperiments)
+	prometheus.MustRegister(gaugeMetrics.ResultProbeSuccessPercentage)
+	prometheus.MustRegister(gaugeMetrics.ExperimentStartTime)
+	prometheus.MustRegister(gaugeMetrics.ExperimentEndTime)
+	prometheus.MustRegister(gaugeMetrics.ExperimentChaosInjectedTime)
+	prometheus.MustRegister(gaugeMetrics.ClusterScopedTotalPassedExperiments)
+	prometheus.MustRegister(gaugeMetrics.ClusterScopedTotalFailedExperiments)
+	prometheus.MustRegister(gaugeMetrics.ClusterScopedTotalAwaitedExperiments)
+	prometheus.MustRegister(gaugeMetrics.ClusterScopedExperimentsRunCount)
+	prometheus.MustRegister(gaugeMetrics.ClusterScopedExperimentsInstalledCount)
+	prometheus.MustRegister(gaugeMetrics.NamespaceScopedTotalPassedExperiments)
+	prometheus.MustRegister(gaugeMetrics.NamespaceScopedTotalFailedExperiments)
+	prometheus.MustRegister(gaugeMetrics.NamespaceScopedTotalAwaitedExperiments)
+	prometheus.MustRegister(gaugeMetrics.NamespaceScopedExperimentsRunCount)
+	prometheus.MustRegister(gaugeMetrics.NamespaceScopedExperimentsInstalledCount)
 }

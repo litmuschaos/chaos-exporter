@@ -38,6 +38,7 @@ import (
 	//auth for gcp: optional
 	"github.com/litmuschaos/chaos-exporter/controller"
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
@@ -177,7 +178,11 @@ var _ = Describe("BDD on chaos-exporter", func() {
 		It("should be a zero failed experiments", func() {
 			By("Checking experiments metrics")
 
-			err := controller.GetLitmusChaosMetrics(client)
+			gaugeMetrics := controller.GaugeMetrics{}
+			overallChaosResults := litmuschaosv1alpha1.ChaosResultList{}
+			gaugeMetrics.InitializeGaugeMetrics().
+				RegisterFixedMetrics()
+			err := gaugeMetrics.GetLitmusChaosMetrics(client, &overallChaosResults)
 			Expect(err).To(BeNil())
 
 		})
