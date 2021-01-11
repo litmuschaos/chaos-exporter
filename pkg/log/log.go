@@ -29,7 +29,7 @@ func Info(msg interface{}) {
 // InfoWithValues log the General operational entries about what's going on inside the application
 // It also print the extra key values pairs
 func InfoWithValues(msg interface{}, val map[string]interface{}) {
-	logrus.WithFields(val).Info(msg)
+	logrus.WithFields(val).Infoln(msg)
 }
 
 // ErrorWithValues log the Error entries happening inside the code
