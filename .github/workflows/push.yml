@@ -118,6 +118,8 @@ jobs:
           DOCKER_REPO: litmuschaos
           DOCKER_IMAGE: chaos-exporter
           DOCKER_TAG: ci
+          DNAME: ${{ secrets.DNAME }}
+          DPASS: ${{ secrets.DPASS }}
         run: |
           cd go/src/github.com/${{github.repository}}
           make go-build
