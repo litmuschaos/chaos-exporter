@@ -1,6 +1,8 @@
 package log
 
 import (
+	"fmt"
+
 	logrus "github.com/sirupsen/logrus"
 )
 
@@ -30,6 +32,7 @@ func Info(msg interface{}) {
 // It also print the extra key values pairs
 func InfoWithValues(msg interface{}, val map[string]interface{}) {
 	logrus.WithFields(val).Infoln(msg)
+	fmt.Print("\n")
 }
 
 // ErrorWithValues log the Error entries happening inside the code
