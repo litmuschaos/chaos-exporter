@@ -99,8 +99,8 @@ trivy-security-check:
 	@echo "------------------"
 	@echo "--> Trivy Security Check"
 	@echo "------------------"
-	./trivy --exit-code 0 --severity HIGH --no-progress litmuschaos/chaos-exporter:ci
-	./trivy --exit-code 1 --severity CRITICAL --no-progress litmuschaos/chaos-exporter:ci
+	./trivy --exit-code 0 --severity HIGH --no-progress $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+	./trivy --exit-code 1 --severity CRITICAL --no-progress $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 
 .PHONY: push
 push: docker-push
@@ -109,7 +109,7 @@ docker-push:
 	@echo "------------------"
 	@echo "--> Push chaos-exporter image" 
 	@echo "------------------"
-	REPONAME="litmuschaos" IMGNAME="chaos-exporter" IMGTAG="ci" ./buildscripts/push
+	REPONAME="$(DOCKER_REPO)" IMGNAME="$(DOCKER_IMAGE)" IMGTAG="$(DOCKER_TAG)" ./buildscripts/push
 
 unused-package-check:
 	@echo "------------------"
