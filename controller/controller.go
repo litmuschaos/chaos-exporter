@@ -37,14 +37,20 @@ func Exporter(clients clients.ClientSets) {
 	gaugeMetrics.InitializeGaugeMetrics().
 		RegisterFixedMetrics()
 
+	monitoringEnabled := MonitoringEnabled{
+		IsChaosResultsAvailable: true,
+		IsChaosEnginesAvailable: true,
+	}
+
 	for {
-		if err := gaugeMetrics.GetLitmusChaosMetrics(clients, &overallChaosResults); err != nil {
+		if err := gaugeMetrics.GetLitmusChaosMetrics(clients, &overallChaosResults, &monitoringEnabled); err != nil {
 			log.Errorf("err: %v", err)
 		}
 		time.Sleep(1000 * time.Millisecond)
 	}
 }
 
+// RegisterFixedMetrics register the prometheus metrics
 func (gaugeMetrics *GaugeMetrics) RegisterFixedMetrics() {
 	prometheus.MustRegister(gaugeMetrics.ResultPassedExperiments)
 	prometheus.MustRegister(gaugeMetrics.ResultFailedExperiments)
