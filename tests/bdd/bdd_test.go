@@ -159,6 +159,11 @@ var _ = BeforeSuite(func() {
 			Experiments: []v1alpha1.ExperimentList{
 				{
 					Name: "pod-delete",
+					Spec: litmuschaosv1alpha1.ExperimentAttributes{
+						Components: litmuschaosv1alpha1.ExperimentComponents{
+							ExperimentImage: "litmuschaos/go-runner:ci",
+						},
+					},
 				},
 			},
 		},

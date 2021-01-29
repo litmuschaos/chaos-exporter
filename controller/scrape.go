@@ -324,11 +324,8 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		setStartTime(events).
 		setEndTime(events).
 		setChaosInjectTime(events).
-		setTotalDuration()
-
-	if err = resultDetails.setVerdictCount(verdict, clients); err != nil {
-		return err
-	}
+		setTotalDuration().
+		setVerdictCount(verdict, chaosResult)
 
 	return nil
 }
@@ -352,28 +349,15 @@ func (resultDetails *ChaosResultDetails) setUID(uid clientTypes.UID) *ChaosResul
 }
 
 // setVerdict increase the metric count based on given verdict/events
-func (resultDetails *ChaosResultDetails) setVerdictCount(verdict string, clients clients.ClientSets) error {
-
-	// count the passed events counts
-	passedEvents, err := resultDetails.getPassedEventsInResult(clients)
-	if err != nil {
-		return err
-	}
-	resultDetails.PassedExperiments = float64(passedEvents)
-
-	// count the failed events counts
-	failedEvents, err := resultDetails.getFailedEventsInResult(clients)
-	if err != nil {
-		return err
-	}
-	resultDetails.FailedExperiments = float64(failedEvents)
+func (resultDetails *ChaosResultDetails) setVerdictCount(verdict string, chaosResult *litmuschaosv1alpha1.ChaosResult) {
 
 	// count the chaosresult as awaited if verdict is awaited
 	switch verdict {
 	case "awaited":
 		resultDetails.AwaitedExperiments++
 	}
-	return nil
+	resultDetails.PassedExperiments = float64(chaosResult.Status.History.PassedRuns)
+	resultDetails.FailedExperiments = float64(chaosResult.Status.History.FailedRuns)
 }
 
 // setProbeSuccesPercentage sets ProbeSuccesPercentage inside resultDetails struct
@@ -439,36 +423,6 @@ func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceUI
 		}
 	}
 	return finalEventList, nil
-}
-
-// getPassedEventsInResult count the passed events inside given chaosresult
-func (resultDetails ChaosResultDetails) getPassedEventsInResult(clients clients.ClientSets) (int, error) {
-	passedEventCount := 0
-	eventsList, err := getEventsForSpecificInvolvedResource(clients, resultDetails.UID, resultDetails.Namespace)
-	if err != nil {
-		return passedEventCount, err
-	}
-	for _, event := range eventsList.Items {
-		if event.Reason == "Pass" {
-			passedEventCount++
-		}
-	}
-	return passedEventCount, nil
-}
-
-// getFailedEventsInResult count the passed events inside given chaosresult
-func (resultDetails ChaosResultDetails) getFailedEventsInResult(clients clients.ClientSets) (int, error) {
-	failedEventCount := 0
-	eventsList, err := getEventsForSpecificInvolvedResource(clients, resultDetails.UID, resultDetails.Namespace)
-	if err != nil {
-		return failedEventCount, err
-	}
-	for _, event := range eventsList.Items {
-		if event.Reason == "Fail" {
-			failedEventCount++
-		}
-	}
-	return failedEventCount, nil
 }
 
 // Maximum returns the maximum value

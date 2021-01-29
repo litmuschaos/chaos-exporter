@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.18
 	github.com/golang/protobuf v1.4.1 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
-	github.com/litmuschaos/chaos-operator v0.0.0-20201211123759-09740d8bf144
+	github.com/litmuschaos/chaos-operator v0.0.0-20210112070251-865ad815a2b9
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.9.0
 	github.com/pkg/errors v0.9.1
