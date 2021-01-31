@@ -239,3 +239,9 @@ type GaugeMetrics struct {
 	ClusterScopedExperimentsInstalledCount   *prometheus.GaugeVec
 	ClusterScopedExperimentsRunCount         *prometheus.GaugeVec
 }
+
+// MonitoringEnabled contains existance/availability of chaosengines and chaosresults
+type MonitoringEnabled struct {
+	IsChaosResultsAvailable bool
+	IsChaosEnginesAvailable bool
+}

@@ -187,7 +187,11 @@ var _ = Describe("BDD on chaos-exporter", func() {
 			overallChaosResults := litmuschaosv1alpha1.ChaosResultList{}
 			gaugeMetrics.InitializeGaugeMetrics().
 				RegisterFixedMetrics()
-			err := gaugeMetrics.GetLitmusChaosMetrics(client, &overallChaosResults)
+			monitoringEnabled := controller.MonitoringEnabled{
+				IsChaosResultsAvailable: true,
+				IsChaosEnginesAvailable: true,
+			}
+			err := gaugeMetrics.GetLitmusChaosMetrics(client, &overallChaosResults, &monitoringEnabled)
 			Expect(err).To(BeNil())
 
 		})
