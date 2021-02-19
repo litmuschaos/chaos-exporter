@@ -45,6 +45,7 @@ func Exporter(clients clients.ClientSets) {
 	}
 }
 
+// RegisterFixedMetrics register the metrics
 func (gaugeMetrics *GaugeMetrics) RegisterFixedMetrics() {
 	prometheus.MustRegister(gaugeMetrics.ResultPassedExperiments)
 	prometheus.MustRegister(gaugeMetrics.ResultFailedExperiments)
