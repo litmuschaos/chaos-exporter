@@ -40,7 +40,7 @@ import (
 var err error
 
 // GetLitmusChaosMetrics derive and send the chaos metrics
-func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList) error {
+func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList, monitoringEnabled *MonitoringEnabled) error {
 	// initialising the parameters for the namespaced scope metrics
 	namespacedScopeMetrics := NamespacedScopeMetrics{
 		PassedExperiments:         0,
@@ -57,7 +57,7 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	}
 	watchNamespace := os.Getenv("WATCH_NAMESPACE")
 	// Getting list of all the chaosresults for the monitoring
-	resultList, err := GetResultList(clients, watchNamespace)
+	resultList, err := GetResultList(clients, watchNamespace, monitoringEnabled)
 	if err != nil {
 		return err
 	}
@@ -244,7 +244,7 @@ func (awsConfig *AWSConfig) putAwsMetricData(sess *session.Session, metricName s
 }
 
 // GetResultList return the result list correspond to the monitoring enabled chaosengine
-func GetResultList(clients clients.ClientSets, chaosNamespace string) (litmuschaosv1alpha1.ChaosResultList, error) {
+func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
 
 	finalChaosResultList := litmuschaosv1alpha1.ChaosResultList{}
 	chaosEngineList, err := clients.LitmusClient.ChaosEngines(chaosNamespace).List(metav1.ListOptions{})
@@ -254,8 +254,17 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string) (litmuscha
 	// filter the chaosengines based on monitoring enabled
 	filteredChaosEngineList := filterMonitoringEnabledEngines(chaosEngineList)
 	if len(filteredChaosEngineList.Items) == 0 {
-		log.Warnf("No chaosengine found with monitoring enabled")
+		if monitoringEnabled.IsChaosEnginesAvailable {
+			monitoringEnabled.IsChaosEnginesAvailable = false
+			log.Warn("No chaosengine found with monitoring enabled")
+			log.Info("[Wait]: Waiting for the chaosengine with monitoring enabled ... ")
+		}
 		return litmuschaosv1alpha1.ChaosResultList{}, nil
+	}
+
+	if !monitoringEnabled.IsChaosEnginesAvailable {
+		log.Info("[Wait]: Cheers! Wait is over, found desired chaosengine")
+		monitoringEnabled.IsChaosEnginesAvailable = true
 	}
 
 	chaosResultList, err := clients.LitmusClient.ChaosResults(chaosNamespace).List(metav1.ListOptions{})
@@ -263,8 +272,17 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string) (litmuscha
 		return litmuschaosv1alpha1.ChaosResultList{}, err
 	}
 	if len(chaosResultList.Items) == 0 {
-		log.Warnf("No chaosresult found!")
+		if monitoringEnabled.IsChaosResultsAvailable {
+			monitoringEnabled.IsChaosResultsAvailable = false
+			log.Warnf("No chaosresult found!")
+			log.Info("[Wait]: Waiting for the chaosresult ... ")
+		}
 		return litmuschaosv1alpha1.ChaosResultList{}, nil
+	}
+
+	if !monitoringEnabled.IsChaosResultsAvailable {
+		log.Info("[Wait]: Cheers! Wait is over, found desired chaosresult")
+		monitoringEnabled.IsChaosResultsAvailable = true
 	}
 
 	// pick only those chaosresults, which correspond to the filtered chaosengines
@@ -307,11 +325,8 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		setEndTime(events).
 		setChaosInjectTime(events).
 		setChaosEngine(chaosResult.Spec.EngineName).
-		setTotalDuration()
-
-	if err = resultDetails.setVerdictCount(verdict, clients); err != nil {
-		return err
-	}
+		setTotalDuration().
+		setVerdictCount(verdict, chaosResult)
 
 	return nil
 }
@@ -335,28 +350,15 @@ func (resultDetails *ChaosResultDetails) setUID(uid clientTypes.UID) *ChaosResul
 }
 
 // setVerdict increase the metric count based on given verdict/events
-func (resultDetails *ChaosResultDetails) setVerdictCount(verdict string, clients clients.ClientSets) error {
-
-	// count the passed events counts
-	passedEvents, err := resultDetails.getPassedEventsInResult(clients)
-	if err != nil {
-		return err
-	}
-	resultDetails.PassedExperiments = float64(passedEvents)
-
-	// count the failed events counts
-	failedEvents, err := resultDetails.getFailedEventsInResult(clients)
-	if err != nil {
-		return err
-	}
-	resultDetails.FailedExperiments = float64(failedEvents)
+func (resultDetails *ChaosResultDetails) setVerdictCount(verdict string, chaosResult *litmuschaosv1alpha1.ChaosResult) {
 
 	// count the chaosresult as awaited if verdict is awaited
 	switch verdict {
 	case "awaited":
 		resultDetails.AwaitedExperiments++
 	}
-	return nil
+	resultDetails.PassedExperiments = float64(chaosResult.Status.History.PassedRuns)
+	resultDetails.FailedExperiments = float64(chaosResult.Status.History.FailedRuns)
 }
 
 // setProbeSuccesPercentage sets ProbeSuccesPercentage inside resultDetails struct
@@ -428,36 +430,6 @@ func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceUI
 		}
 	}
 	return finalEventList, nil
-}
-
-// getPassedEventsInResult count the passed events inside given chaosresult
-func (resultDetails ChaosResultDetails) getPassedEventsInResult(clients clients.ClientSets) (int, error) {
-	passedEventCount := 0
-	eventsList, err := getEventsForSpecificInvolvedResource(clients, resultDetails.UID, resultDetails.Namespace)
-	if err != nil {
-		return passedEventCount, err
-	}
-	for _, event := range eventsList.Items {
-		if event.Reason == "Pass" {
-			passedEventCount++
-		}
-	}
-	return passedEventCount, nil
-}
-
-// getFailedEventsInResult count the passed events inside given chaosresult
-func (resultDetails ChaosResultDetails) getFailedEventsInResult(clients clients.ClientSets) (int, error) {
-	failedEventCount := 0
-	eventsList, err := getEventsForSpecificInvolvedResource(clients, resultDetails.UID, resultDetails.Namespace)
-	if err != nil {
-		return failedEventCount, err
-	}
-	for _, event := range eventsList.Items {
-		if event.Reason == "Fail" {
-			failedEventCount++
-		}
-	}
-	return failedEventCount, nil
 }
 
 // Maximum returns the maximum value

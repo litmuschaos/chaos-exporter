@@ -159,6 +159,11 @@ var _ = BeforeSuite(func() {
 			Experiments: []v1alpha1.ExperimentList{
 				{
 					Name: "pod-delete",
+					Spec: litmuschaosv1alpha1.ExperimentAttributes{
+						Components: litmuschaosv1alpha1.ExperimentComponents{
+							ExperimentImage: "litmuschaos/go-runner:ci",
+						},
+					},
 				},
 			},
 		},
@@ -182,7 +187,11 @@ var _ = Describe("BDD on chaos-exporter", func() {
 			overallChaosResults := litmuschaosv1alpha1.ChaosResultList{}
 			gaugeMetrics.InitializeGaugeMetrics().
 				RegisterFixedMetrics()
-			err := gaugeMetrics.GetLitmusChaosMetrics(client, &overallChaosResults)
+			monitoringEnabled := controller.MonitoringEnabled{
+				IsChaosResultsAvailable: true,
+				IsChaosEnginesAvailable: true,
+			}
+			err := gaugeMetrics.GetLitmusChaosMetrics(client, &overallChaosResults, &monitoringEnabled)
 			Expect(err).To(BeNil())
 
 		})
@@ -220,13 +229,13 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_cluster_scoped_passed_experiments 1"))
 
 				By("Should be matched with engine_failed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_failed_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus", chaosengine_name="engine-nginx"} 0`))
+				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_failed_experiments{chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0`))
 
 				By("Should be matched with engine_passed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_passed_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus",chaosengine_name="engine-nginx"} 1`))
+				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_passed_experiments{chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 1`))
 
 				By("Should be matched with engine_waiting_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_awaited_experiments{chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus",chaosengine_name="engine-nginx"} 0`))
+				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_awaited_experiments{chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0`))
 
 			}
 		})

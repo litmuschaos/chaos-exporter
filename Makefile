@@ -69,8 +69,19 @@ bdddeps:
 	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/chaos_crds.yaml
 	kubectl create ns litmus
 
+.PHONY: docker.buildx
+docker.buildx:
+	@echo "------------------------------"
+	@echo "--> Setting up Builder        " 
+	@echo "------------------------------"
+	@if ! docker buildx ls | grep -q multibuilder; then\
+		docker buildx create --name multibuilder;\
+		docker buildx inspect multibuilder --bootstrap;\
+		docker buildx use multibuilder;\
+	fi
+
 .PHONY: build  
-build: go-build docker-build
+build: go-build docker.buildx docker-build
 
 go-build:
 	@echo "------------------"
@@ -83,7 +94,7 @@ docker-build:
 	@echo "--> Build chaos-exporter image" 
 	@echo "------------------"
 	# Dockerfile available in the repo root
-	@sudo docker buildx build --file Dockerfile --progress plane --platform linux/arm64,linux/amd64 --no-cache --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@docker buildx build --file Dockerfile --progress plane --platform linux/arm64,linux/amd64 --no-cache --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 .PHONY: test
 test:
@@ -103,7 +114,7 @@ trivy-security-check:
 	./trivy --exit-code 1 --severity CRITICAL --no-progress $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 
 .PHONY: push
-push: docker-push
+push: docker.buildx docker-push
 
 docker-push:
 	@echo "------------------"
