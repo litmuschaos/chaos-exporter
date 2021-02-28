@@ -1,7 +1,9 @@
 name: Build
 on:
+  push:
+    branches: [ remove-vendor ]
   pull_request:
-    branches: [master, remove-vendor]
+    branches: [master]
     types: [opened, synchronize, reopened]
 
 jobs:
