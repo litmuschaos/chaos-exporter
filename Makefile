@@ -8,9 +8,10 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 # docker info
-DOCKER_REPO ?= litmuschaos
+DOCKER_REPO ?= imrajdas
 DOCKER_IMAGE ?= chaos-exporter
 DOCKER_TAG ?= ci
+PWD := $(CURDIR)
 
 .PHONY: all
 all: format lint deps build test security-checks push 
@@ -144,4 +145,18 @@ push-amd64:
 	@echo "------------------------------"
 	@echo "--> Pushing image" 
 	@echo "------------------------------"
-	@sudo docker push $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)	
+	@sudo docker push $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+
+.PHONY: build-chaos-exporter build-chaos-exporter-amd64 push-chaos-exporter
+
+publish-chaos-exporter: build-chaos-exporter push-chaos-exporter
+
+build-chaos-exporter:
+	@docker buildx build --file Dockerfile --progress plane --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+
+build-chaos-exporter-amd64:
+	@docker build -f Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .  --build-arg TARGETPLATFORM="linux/amd64"
+
+push-chaos-exporter:
+	@docker buildx build --file Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@docker buildx build --file Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):latest .
