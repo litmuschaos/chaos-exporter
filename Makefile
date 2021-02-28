@@ -8,7 +8,7 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 # docker info
-DOCKER_REPO ?= imrajdas
+DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-exporter
 DOCKER_TAG ?= ci
 PWD := $(CURDIR)
@@ -141,7 +141,6 @@ build-amd64:
 
 .PHONY: push-amd64
 push-amd64:
-
 	@echo "------------------------------"
 	@echo "--> Pushing image" 
 	@echo "------------------------------"

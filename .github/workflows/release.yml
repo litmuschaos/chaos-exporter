@@ -114,9 +114,12 @@ jobs:
     needs: image-build
     runs-on: ubuntu-latest
     steps:
-      - name: Trivy Security Check
-        run: |
-          cd go/src/github.com/${{github.repository}}
-          wget https://github.com/aquasecurity/trivy/releases/download/v0.11.0/trivy_0.11.0_Linux-64bit.tar.gz
-          tar zxvf trivy_0.11.0_Linux-64bit.tar.gz
-          make security-checks
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'docker.io/litmuschaos/chaos-exporter:ci'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
