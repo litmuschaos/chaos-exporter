@@ -98,13 +98,10 @@ jobs:
 
       - name: Dependency checks
         run: |
-          ls  
-          cd go/src/github.com/${{github.repository}}
           make deps
 
       - name: Running Go BDD Test
         run: |
-          cd go/src/github.com/${{github.repository}}
           make test
 
   security-scan:

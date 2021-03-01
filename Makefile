@@ -4,9 +4,6 @@
 
 IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 
-# list only our namespaced directories
-PACKAGES = $(shell go list ./... | grep -v '/vendor/')
-
 # docker info
 DOCKER_REPO ?= litmuschaos
 DOCKER_REPO ?= litmuschaos
