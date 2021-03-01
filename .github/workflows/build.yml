@@ -1,5 +1,7 @@
 name: Build
 on:
+  push:
+    branches: [ remove-vendor ]
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened]
@@ -64,7 +66,7 @@ jobs:
           make build-chaos-exporter
 
   tests:
-    needs: image-build
+#    needs: image-build
     runs-on: ubuntu-latest
     steps:
       # Checkout to the latest commit
