@@ -27,13 +27,13 @@ jobs:
           path: go/src/github.com/${{github.repository}}
 
       #TODO: Add Dockerfile linting
-      # Running go-lint
-      - name: Checking Go-Lint
-        run : |
-          sudo apt-get update && sudo apt-get install golint
-          cd go/src/github.com/${{github.repository}}
-          make format
-          make lint
+#      # Running go-lint
+#      - name: Checking Go-Lint
+#        run : |
+#          sudo apt-get update && sudo apt-get install golint
+#          cd go/src/github.com/${{github.repository}}
+#          make format
+#          make lint
 
   image-build:
     runs-on: ubuntu-latest
