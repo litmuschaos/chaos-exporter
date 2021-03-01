@@ -1,17 +1,3 @@
-#FROM ubuntu:16.04
-#
-#ARG TARGETARCH
-#ENV EXPORTER=/exporter-${TARGETARCH}
-#
-#RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/cache/apk/*
-#
-#COPY .$EXPORTER /
-#
-#EXPOSE 8080
-#
-#CMD ["sh", "-c","$EXPORTER"]
-#
-
 # Multi-stage docker build
 # Build stage
 FROM golang:1.14 AS builder
@@ -31,18 +17,17 @@ RUN go env
 
 RUN CGO_ENABLED=0 go build -o /output/chaos-exporter -v ./cmd/exporter/
 
-RUN useradd -u 10001 chaos-exporter
-
 # Packaging stage
-FROM scratch
+FROM alpine:latest
 
 LABEL maintainer="LitmusChaos"
 
 COPY --from=builder /output/chaos-exporter /
-COPY --from=builder /etc/passwd /etc/passwd
 
-USER kyverno
+RUN addgroup -S litmus && adduser -S -G litmus 1001
+
+USER 1001
+
+CMD ["./chaos-exporter"]
 
 EXPOSE 8080
-
-ENTRYPOINT ["./chaos-exporter"]
