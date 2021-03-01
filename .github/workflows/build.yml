@@ -10,30 +10,33 @@ jobs:
   pre-checks:
     runs-on: ubuntu-latest
     steps:
-      # Install golang
-      - uses: actions/setup-go@v2
-        with:
-          go-version: '^1.13.1'
-
-      # Setup gopath
-      - name: Setting up GOPATH 
-        run: |
-          echo "GOPATH=${GITHUB_WORKSPACE}/go" >> $GITHUB_ENV
-        
       # Checkout to the latest commit
       # On specific directory/path
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
           path: go/src/github.com/${{github.repository}}
 
-      #TODO: Add Dockerfile linting
-#      # Running go-lint
-#      - name: Checking Go-Lint
-#        run : |
-#          sudo apt-get update && sudo apt-get install golint
-#          cd go/src/github.com/${{github.repository}}
-#          make format
-#          make lint
+      # Install golang
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+
+      - name: gofmt check
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -ne 0 ]
+          then
+           echo "The following files were found to be not go formatted:"
+           gofmt -s -l .
+           echo "Please run 'make fmt' to go format the above files."
+           exit 1
+          fi
+
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@v1
+
+      - name: unused-package check
+        run: make unused-package-check
 
   image-build:
     runs-on: ubuntu-latest
@@ -57,19 +60,17 @@ jobs:
     needs: image-build
     runs-on: ubuntu-latest
     steps:
+      # Checkout to the latest commit
+      # On specific directory/path
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          path: go/src/github.com/${{github.repository}}
+
       # Install golang
       - uses: actions/setup-go@v2
         with:
-          go-version: '^1.13.1'
-
-      # Setup gopath
-      - name: Setting up GOPATH
-        run: |
-          echo "GOPATH=${GITHUB_WORKSPACE}/go" >> $GITHUB_ENV
-
-      - uses: actions/checkout@v2
-        with:
-          path: go/src/github.com/${{github.repository}}
+          go-version: 1.14
 
       #Install and configure a kind cluster
       - name: Installing Prerequisites (KinD Cluster)

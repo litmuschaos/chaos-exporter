@@ -12,37 +12,6 @@ DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-exporter
 DOCKER_TAG ?= ci
 
-.PHONY: format
-format:
-	@echo "------------------"
-	@echo "--> Running go fmt"
-	@echo "------------------"
-	@fmtRes=$$(gofmt -d $$(find . -path ./vendor -prune -o -name '*.go' -print)); \
-	if [ -n "$${fmtRes}" ]; then \
-		echo "gofmt checking failed!" && echo "$${fmtRes}" \
-		&& exit 1;\
-	fi
-
-.PHONY: lint
-lint:
-	@echo "------------------"
-	@echo "--> Running golint"
-	@echo "------------------"
-	@golintRes=$$(golint -d $$(find . -path ./vendor -prune -o -name '*.go' -print)); \
-	if [ -n "$${golintRes}" ]; then \
-		echo "golint checking failed!" && echo "$${golintRes}" \
-		&& exit 1;\
-	fi
-
-#	@echo "------------------"
-#	@echo "--> Running go vet"
-#	@echo "------------------"
-#	@govetRes=$$(govet -d $$(find . -path ./vendor -prune -o -name '*.go' -print)); \
-#	if [ -n "$${govetRes}" ]; then \
-#		echo "go vet checking failed!" && echo "$${govetRes}" \
-#		&& exit 1;\
-#	fi
-
 .PHONY: unused-package-check
 unused-package-check:
 	@echo "------------------"
