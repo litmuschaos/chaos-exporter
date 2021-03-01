@@ -36,7 +36,10 @@ jobs:
         uses: reviewdog/action-golangci-lint@v1
 
       - name: unused-package check
-        run: make unused-package-check
+        run: |
+          ls
+          cat Makefile
+          make unused-package-check
 
   image-build:
     runs-on: ubuntu-latest
@@ -61,8 +64,6 @@ jobs:
           DOCKER_IMAGE: chaos-exporter
           DOCKER_TAG: ci
         run: |
-          ls
-          cat Makefile
           make build-chaos-exporter
 
   tests:
