@@ -9,6 +9,7 @@ PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 # docker info
 DOCKER_REPO ?= litmuschaos
+DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-exporter
 DOCKER_TAG ?= ci
 
@@ -23,7 +24,7 @@ unused-package-check:
 	fi
 
 .PHONY: deps
-deps: build_check_docker godeps bdddeps unused-package-check
+deps: build_check_docker godeps bdddeps
 
 build_check_docker:
 	@if [ $(IS_DOCKER_INSTALLED) -eq 1 ]; \

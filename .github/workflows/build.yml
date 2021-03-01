@@ -61,6 +61,8 @@ jobs:
           DOCKER_IMAGE: chaos-exporter
           DOCKER_TAG: ci
         run: |
+          ls
+          cat Makefile
           make build-chaos-exporter
 
   tests:
