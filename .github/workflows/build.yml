@@ -69,15 +69,20 @@ jobs:
 #    needs: image-build
     runs-on: ubuntu-latest
     steps:
-      # Checkout to the latest commit
-      # On specific directory/path
-      - name: Checkout
-        uses: actions/checkout@v2
-
       # Install golang
       - uses: actions/setup-go@v2
         with:
           go-version: 1.14
+
+      # Setup gopath
+      - name: Setting up GOPATH
+        run: |
+          echo "GOPATH=${GITHUB_WORKSPACE}/go" >> $GITHUB_ENV
+
+      # Checkout to the latest commit
+      # On specific directory/path
+      - name: Checkout
+        uses: actions/checkout@v2
 
       #Install and configure a kind cluster
       - name: Installing Prerequisites (KinD Cluster)
@@ -93,6 +98,7 @@ jobs:
 
       - name: Dependency checks
         run: |
+          ls  
           cd go/src/github.com/${{github.repository}}
           make deps
 
