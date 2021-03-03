@@ -68,12 +68,10 @@ jobs:
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: |
-          cd go/src/github.com/${{github.repository}}
           make publish-chaos-exporter
 
   tests:
-    needs: image-build
-    runs-on: ubuntu-latest
+    needs: pre-checks
     steps:
       # Checkout to the latest commit
       # On specific directory/path
@@ -106,11 +104,11 @@ jobs:
           make test
 
   security-scan:
-    needs: image-build
+    needs: pre-checks
     runs-on: ubuntu-latest
     steps:
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.16.0
         with:
           image-ref: 'docker.io/litmuschaos/chaos-exporter:ci'
           format: 'table'

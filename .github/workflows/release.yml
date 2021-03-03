@@ -66,7 +66,7 @@ jobs:
           echo "TAG=${TAG}" >> $GITHUB_ENV
           echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
 
-      - name: Build & Push Docker Image
+      - name: Build & Push Docker Image with version tag
         env:
           DOCKER_REPO: litmuschaos
           DOCKER_IMAGE: chaos-exporter
@@ -74,11 +74,20 @@ jobs:
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: |
-          cd go/src/github.com/${{github.repository}}
+          make publish-chaos-exporter
+
+      - name: Build & Push Docker Image with latest tag
+        env:
+          DOCKER_REPO: litmuschaos
+          DOCKER_IMAGE: chaos-exporter
+          DOCKER_TAG: latest
+          DNAME: ${{ secrets.DNAME }}
+          DPASS: ${{ secrets.DPASS }}
+        run: |
           make publish-chaos-exporter
 
   tests:
-    needs: image-build
+    needs: pre-checks
     runs-on: ubuntu-latest
     steps:
       # Checkout to the latest commit
@@ -112,11 +121,11 @@ jobs:
           make test
 
   security-scan:
-    needs: image-build
+    needs: pre-checks
     runs-on: ubuntu-latest
     steps:
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.16.0
         with:
           image-ref: 'docker.io/litmuschaos/chaos-exporter:ci'
           format: 'table'

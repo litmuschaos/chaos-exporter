@@ -6,7 +6,6 @@ IS_DOCKER_INSTALLED = $(shell which docker >> /dev/null 2>&1; echo $$?)
 
 # docker info
 DOCKER_REPO ?= litmuschaos
-DOCKER_REPO ?= litmuschaos
 DOCKER_IMAGE ?= chaos-exporter
 DOCKER_TAG ?= ci
 
@@ -68,4 +67,3 @@ build-chaos-exporter-amd64:
 
 push-chaos-exporter:
 	@docker buildx build --file Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
-	@docker buildx build --file Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):latest .
