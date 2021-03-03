@@ -92,6 +92,7 @@ jobs:
           make test
 
   security-scan:
+    runs-on: ubuntu-latest
     needs: pre-checks
     steps:
       - name: Run Trivy vulnerability scanner
