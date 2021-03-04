@@ -4,7 +4,6 @@ FROM golang:1.14 AS builder
 
 LABEL maintainer="LitmusChaos"
 
-# LD_FLAGS is passed as argument from Makefile. It will be empty, if no argument passed
 ARG TARGETPLATFORM
 
 ADD . /chaos-exporter
