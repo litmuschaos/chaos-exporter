@@ -1,9 +1,7 @@
-name: Push
+name: Release
 on:
-  push:
-    branches:
-      - master
-    tags-ignore:
+  create:
+    tags:
       - '**'
 
 jobs:
@@ -73,7 +71,7 @@ jobs:
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: |
-          make publish-chaos-exporter
+          make push-chaos-exporter
 
       - name: Build & Push Docker Image with latest tag
         env:
@@ -83,7 +81,7 @@ jobs:
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: |
-          make publish-chaos-exporter
+          make push-chaos-exporter
 
   tests:
     needs: pre-checks

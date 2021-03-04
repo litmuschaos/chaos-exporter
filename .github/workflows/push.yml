@@ -67,7 +67,7 @@ jobs:
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: |
-          make publish-chaos-exporter
+          make push-chaos-exporter
 
   tests:
     needs: pre-checks
