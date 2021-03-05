@@ -67,10 +67,11 @@ jobs:
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: |
-          make publish-chaos-exporter
+          make push-chaos-exporter
 
   tests:
     needs: pre-checks
+    runs-on: ubuntu-latest
     steps:
       # Checkout to the latest commit
       # On specific directory/path

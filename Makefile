@@ -57,13 +57,11 @@ test:
 
 .PHONY: build-chaos-exporter build-chaos-exporter-amd64 push-chaos-exporter
 
-publish-chaos-exporter: build-chaos-exporter push-chaos-exporter
-
 build-chaos-exporter:
-	@docker buildx build --file Dockerfile --progress plane --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@docker buildx build --file Dockerfile --progress plane  --no-cache --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
-build-chaos-exporter-amd64:
-	@docker build -f Dockerfile -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .  --build-arg TARGETPLATFORM="linux/amd64"
+build-for-amd64:
+	@docker build -f Dockerfile  --no-cache -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .  --build-arg TARGETPLATFORM="linux/amd64"
 
 push-chaos-exporter:
-	@docker buildx build --file Dockerfile --progress plane --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@docker buildx build --file Dockerfile --progress plane --no-cache --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
