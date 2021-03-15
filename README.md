@@ -27,7 +27,7 @@
 
 ### Running Litmus Chaos Experiments in order to generate metrics
 
-- Follow the steps described [here](https://github.com/litmuschaos/chaos-operator/blob/master/deploy/README.md) 
+- Follow the steps described [here](https://docs.litmuschaos.io/docs/getstarted/) 
   to start running litmus chaos experiments ans storing chaos results. The chaos custom resources are used by the 
   exporter to generate metrics. 
   
