@@ -32,6 +32,7 @@ import (
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	clientTypes "k8s.io/apimachinery/pkg/types"
 )
 
@@ -39,6 +40,8 @@ var err error
 
 // GetLitmusChaosMetrics derive and send the chaos metrics
 func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList, monitoringEnabled *MonitoringEnabled) error {
+	engineCount := 0
+
 	// initialising the parameters for the namespaced scope metrics
 	namespacedScopeMetrics := NamespacedScopeMetrics{
 		PassedExperiments:         0,
@@ -69,6 +72,7 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	// and aggregate metrics of all results present inside chaos namespace, if chaos namespace is defined
 	// otherwise it derive metrics for all chaosresults present inside cluster
 	for _, chaosresult := range resultList.Items {
+
 		resultDetails := ChaosResultDetails{
 			PassedExperiments:  0,
 			FailedExperiments:  0,
@@ -78,8 +82,16 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 		// deriving metrics data from the chaosresult
 		err = resultDetails.getExperimentMetricsFromResult(&chaosresult, clients)
 		if err != nil {
-			log.Errorf("err: %v", err)
+			// k8serrors.IsNotFound(err) checking k8s resource is found or not,
+			// It will skip this result if k8s resource is not found.
+			if k8serrors.IsNotFound(err) {
+				continue
+			}
+			return err
 		}
+		//engineCount is storing count of chaosengines
+		//It is helping in keeping track of available chaosengines associated with chaosresults
+		engineCount++
 
 		//DISPLAY THE METRICS INFORMATION
 		log.InfoWithValues("The chaos metrics are as follows", logrus.Fields{
@@ -102,12 +114,21 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 		namespacedScopeMetrics.ExperimentsInstalledCount++
 		namespacedScopeMetrics.ExperimentRunCount += resultDetails.AwaitedExperiments + resultDetails.PassedExperiments + resultDetails.FailedExperiments
 		// setting chaosresult metrics for the given chaosresult
-		gaugeMetrics.setResultChaosMetrics(resultDetails)
 
+		gaugeMetrics.setResultChaosMetrics(resultDetails)
 		// setting chaosresult aws metrics for the given chaosresult, which can be used for cloudwatch
 		if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
 			awsConfig.setAwsResultChaosMetrics(resultDetails)
 		}
+	}
+	if engineCount == 0 {
+		if monitoringEnabled.IsChaosEnginesAvailable && monitoringEnabled.IsChaosResultsAvailable {
+			monitoringEnabled.IsChaosEnginesAvailable = false
+			log.Info("[Wait]: Hold on, no chaosengine found ... ")
+		}
+	}
+	if !monitoringEnabled.IsChaosEnginesAvailable && engineCount != 0 {
+		monitoringEnabled.IsChaosEnginesAvailable = true
 	}
 
 	//setting aggregate metrics from the all chaosresults
@@ -188,18 +209,6 @@ func (awsConfig *AWSConfig) setAwsNamespacedChaosMetrics(namespacedScopeMetrics 
 	awsConfig.putAwsMetricData(sess, "experiments_installed_count", "Count", namespacedScopeMetrics.ExperimentsInstalledCount)
 }
 
-// filterMonitoringEnabledEngines filters the monitoring enabled engines from the given list
-func filterMonitoringEnabledEngines(engineList *litmuschaosv1alpha1.ChaosEngineList) *litmuschaosv1alpha1.ChaosEngineList {
-	var filteredEngineList litmuschaosv1alpha1.ChaosEngineList
-	for i := range engineList.Items {
-		// Condition to decide whether current element need to be picked for monitoring
-		if engineList.Items[i].Spec.Monitoring {
-			filteredEngineList.Items = append(filteredEngineList.Items, engineList.Items[i])
-		}
-	}
-	return &filteredEngineList
-}
-
 // putAwsMetricData put the metrics data in cloudwatch service
 func (awsConfig *AWSConfig) putAwsMetricData(sess *session.Session, metricName string, unit string, value float64) error {
 	dimension1 := "ClusterName"
@@ -244,27 +253,6 @@ func (awsConfig *AWSConfig) putAwsMetricData(sess *session.Session, metricName s
 // GetResultList return the result list correspond to the monitoring enabled chaosengine
 func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
 
-	finalChaosResultList := litmuschaosv1alpha1.ChaosResultList{}
-	chaosEngineList, err := clients.LitmusClient.ChaosEngines(chaosNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return litmuschaosv1alpha1.ChaosResultList{}, err
-	}
-	// filter the chaosengines based on monitoring enabled
-	filteredChaosEngineList := filterMonitoringEnabledEngines(chaosEngineList)
-	if len(filteredChaosEngineList.Items) == 0 {
-		if monitoringEnabled.IsChaosEnginesAvailable {
-			monitoringEnabled.IsChaosEnginesAvailable = false
-			log.Warn("No chaosengine found with monitoring enabled")
-			log.Info("[Wait]: Waiting for the chaosengine with monitoring enabled ... ")
-		}
-		return litmuschaosv1alpha1.ChaosResultList{}, nil
-	}
-
-	if !monitoringEnabled.IsChaosEnginesAvailable {
-		log.Info("[Wait]: Cheers! Wait is over, found desired chaosengine")
-		monitoringEnabled.IsChaosEnginesAvailable = true
-	}
-
 	chaosResultList, err := clients.LitmusClient.ChaosResults(chaosNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return litmuschaosv1alpha1.ChaosResultList{}, err
@@ -283,15 +271,7 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoring
 		monitoringEnabled.IsChaosResultsAvailable = true
 	}
 
-	// pick only those chaosresults, which correspond to the filtered chaosengines
-	for _, chaosresult := range chaosResultList.Items {
-		for _, chaosengine := range filteredChaosEngineList.Items {
-			if chaosengine.Name == chaosresult.Spec.EngineName {
-				finalChaosResultList.Items = append(finalChaosResultList.Items, chaosresult)
-			}
-		}
-	}
-	return finalChaosResultList, nil
+	return *chaosResultList, nil
 }
 
 //getLabel returns the key and value which correspond to the chaosengine label
@@ -320,8 +300,12 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 	}
 
 	//matchLabelUID is storing key and value as a chaos UID and ChaosEngineLabel
-	matchLabelUID[string(chaosResult.UID)] = getLabel(engine.Labels)
-
+	_, ok := matchLabelUID[string(chaosResult.UID)]
+	if !ok {
+		matchLabelUID[string(chaosResult.UID)] = []string{getLabel(engine.Labels)}
+	} else {
+		matchLabelUID[string(chaosResult.UID)] = append(matchLabelUID[string(chaosResult.UID)], getLabel(engine.Labels))
+	}
 	// deriving all the events present inside specific chaosengine
 	events, err := getEventsForSpecificInvolvedResource(clients, engine.UID, chaosResult.Namespace)
 	if err != nil {
@@ -469,16 +453,19 @@ func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newC
 				break
 			}
 		}
+
 		if !found {
-			valueEngineLabel := matchLabelUID[string(oldResult.UID)]
-			delete(matchLabelUID, string(oldResult.UID))
-			resultDetails := ChaosResultDetails{
-				Name:             oldResult.Name,
-				Namespace:        oldResult.Namespace,
-				ChaosEngineName:  oldResult.Spec.EngineName,
-				ChaosEngineLabel: valueEngineLabel,
+			for _, value := range matchLabelUID[string(oldResult.UID)] {
+
+				resultDetails := ChaosResultDetails{
+					Name:             oldResult.Name,
+					Namespace:        oldResult.Namespace,
+					ChaosEngineName:  oldResult.Spec.EngineName,
+					ChaosEngineLabel: value,
+				}
+				gaugeMetrics.unsetResultChaosMetrics(resultDetails)
 			}
-			gaugeMetrics.unsetResultChaosMetrics(resultDetails)
+			delete(matchLabelUID, string(oldResult.UID))
 		}
 	}
 }
