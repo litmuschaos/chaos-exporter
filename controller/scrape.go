@@ -267,6 +267,7 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoring
 	}
 
 	if !monitoringEnabled.IsChaosResultsAvailable {
+		log.Info("[Wait]: Cheers! Wait is over, found desired chaosresult")
 		monitoringEnabled.IsChaosResultsAvailable = true
 	}
 
