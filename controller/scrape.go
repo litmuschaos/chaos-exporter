@@ -24,9 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
@@ -139,28 +137,28 @@ func (gaugeMetrics *GaugeMetrics) setNamespacedChaosMetrics(namespacedScopeMetri
 	}
 }
 
-// setResultChaosMetrics sets metrics for the given chaosresult
+// setResultChaosMetrics sets metrics for the given chaosresult details
 func (gaugeMetrics *GaugeMetrics) setResultChaosMetrics(resultDetails ChaosResultDetails) {
-	gaugeMetrics.ResultAwaitedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngine).Set(resultDetails.AwaitedExperiments)
-	gaugeMetrics.ResultPassedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngine).Set(resultDetails.PassedExperiments)
-	gaugeMetrics.ResultFailedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngine).Set(resultDetails.FailedExperiments)
-	gaugeMetrics.ResultProbeSuccessPercentage.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngine).Set(resultDetails.ProbeSuccesPercentage)
-	gaugeMetrics.ExperimentStartTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngine).Set(resultDetails.StartTime)
-	gaugeMetrics.ExperimentEndTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngine).Set(resultDetails.EndTime)
-	gaugeMetrics.ExperimentChaosInjectedTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngine).Set(resultDetails.InjectionTime)
-	gaugeMetrics.ExperimentTotalDuration.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngine).Set(resultDetails.TotalDuration)
+	gaugeMetrics.ResultAwaitedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel).Set(resultDetails.AwaitedExperiments)
+	gaugeMetrics.ResultPassedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel).Set(resultDetails.PassedExperiments)
+	gaugeMetrics.ResultFailedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel).Set(resultDetails.FailedExperiments)
+	gaugeMetrics.ResultProbeSuccessPercentage.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel).Set(resultDetails.ProbeSuccesPercentage)
+	gaugeMetrics.ExperimentStartTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel).Set(resultDetails.StartTime)
+	gaugeMetrics.ExperimentEndTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel).Set(resultDetails.EndTime)
+	gaugeMetrics.ExperimentChaosInjectedTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel).Set(resultDetails.InjectionTime)
+	gaugeMetrics.ExperimentTotalDuration.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel).Set(resultDetails.TotalDuration)
 }
 
-// unsetResultChaosMetrics sets metrics for the given chaosresult
-func (gaugeMetrics *GaugeMetrics) unsetResultChaosMetrics(chaosresult litmuschaosv1alpha1.ChaosResult) {
-	gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name, chaosresult.Spec.EngineName)
-	gaugeMetrics.ResultPassedExperiments.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name, chaosresult.Spec.EngineName)
-	gaugeMetrics.ResultFailedExperiments.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name, chaosresult.Spec.EngineName)
-	gaugeMetrics.ResultProbeSuccessPercentage.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name, chaosresult.Spec.EngineName)
-	gaugeMetrics.ExperimentStartTime.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name, chaosresult.Spec.EngineName)
-	gaugeMetrics.ExperimentEndTime.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name, chaosresult.Spec.EngineName)
-	gaugeMetrics.ExperimentChaosInjectedTime.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name, chaosresult.Spec.EngineName)
-	gaugeMetrics.ExperimentTotalDuration.DeleteLabelValues(chaosresult.Namespace, chaosresult.Name, chaosresult.Spec.EngineName)
+// unsetResultChaosMetrics unset metrics for the given chaosresult details
+func (gaugeMetrics *GaugeMetrics) unsetResultChaosMetrics(resultDetails ChaosResultDetails) {
+	gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel)
+	gaugeMetrics.ResultPassedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel)
+	gaugeMetrics.ResultFailedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel)
+	gaugeMetrics.ResultProbeSuccessPercentage.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel)
+	gaugeMetrics.ExperimentStartTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel)
+	gaugeMetrics.ExperimentEndTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel)
+	gaugeMetrics.ExperimentChaosInjectedTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel)
+	gaugeMetrics.ExperimentTotalDuration.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel)
 }
 
 // setAwsResultChaosMetrics sets aws metrics for the given chaosresult
@@ -296,6 +294,16 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoring
 	return finalChaosResultList, nil
 }
 
+//getLabel returns the key and value which correspond to the chaosengine label
+func getLabel(engineLabel map[string]string) string {
+	chaosEngineLabel := ""
+	valueEngineLabel, ok := engineLabel[EngineLabelKey]
+	if ok {
+		chaosEngineLabel = valueEngineLabel
+	}
+	return chaosEngineLabel
+}
+
 // getExperimentMetricsFromResult derive all the metrics data from the chaosresult and set into resultDetails struct
 func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) error {
 	probeSuccesPercentage := float64(0)
@@ -306,10 +314,14 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 			return err
 		}
 	}
-	engine, err := clients.LitmusClient.ChaosEngines(chaosResult.Namespace).Get(chaosResult.Spec.EngineName, v1.GetOptions{})
+	engine, err := clients.LitmusClient.ChaosEngines(chaosResult.Namespace).Get(chaosResult.Spec.EngineName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
+
+	//matchLabelUID is storing key and value as a chaos UID and ChaosEngineLabel
+	matchLabelUID[string(chaosResult.UID)] = getLabel(engine.Labels)
+
 	// deriving all the events present inside specific chaosengine
 	events, err := getEventsForSpecificInvolvedResource(clients, engine.UID, chaosResult.Namespace)
 	if err != nil {
@@ -324,7 +336,8 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		setStartTime(events).
 		setEndTime(events).
 		setChaosInjectTime(events).
-		setChaosEngine(chaosResult.Spec.EngineName).
+		setChaosEngineName(chaosResult.Spec.EngineName).
+		setChaosEngineLabel(getLabel(engine.Labels)).
 		setTotalDuration().
 		setVerdictCount(verdict, chaosResult)
 
@@ -367,9 +380,15 @@ func (resultDetails *ChaosResultDetails) setProbeSuccesPercentage(probeSuccesPer
 	return resultDetails
 }
 
-// setChaosEngine sets the chaosengine name inside resultDetails struct
-func (resultDetails *ChaosResultDetails) setChaosEngine(chaosengine string) *ChaosResultDetails {
-	resultDetails.ChaosEngine = chaosengine
+// setChaosEngineName sets the chaosEngine name inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setChaosEngineName(chaosEngineName string) *ChaosResultDetails {
+	resultDetails.ChaosEngineName = chaosEngineName
+	return resultDetails
+}
+
+// setChaosEngineLabel sets the chaosEngine label inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setChaosEngineLabel(chaosEngineLabel string) *ChaosResultDetails {
+	resultDetails.ChaosEngineLabel = chaosEngineLabel
 	return resultDetails
 }
 
@@ -442,7 +461,6 @@ func maximum(a, b int64) int64 {
 
 // unsetDeletedChaosResults unset the metrics correspond to deleted chaosresults
 func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newChaosResults *litmuschaosv1alpha1.ChaosResultList) {
-
 	for _, oldResult := range oldChaosResults.Items {
 		found := false
 		for _, newResult := range newChaosResults.Items {
@@ -452,7 +470,15 @@ func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newC
 			}
 		}
 		if !found {
-			gaugeMetrics.unsetResultChaosMetrics(oldResult)
+			valueEngineLabel := matchLabelUID[string(oldResult.UID)]
+			delete(matchLabelUID, string(oldResult.UID))
+			resultDetails := ChaosResultDetails{
+				Name:             oldResult.Name,
+				Namespace:        oldResult.Namespace,
+				ChaosEngineName:  oldResult.Spec.EngineName,
+				ChaosEngineLabel: valueEngineLabel,
+			}
+			gaugeMetrics.unsetResultChaosMetrics(resultDetails)
 		}
 	}
 }
