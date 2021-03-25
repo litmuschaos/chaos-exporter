@@ -22,10 +22,9 @@ import (
 )
 
 //EngineLabelKey is key for ChaosEngineLabel
-//matchLabelUID stores UID as a key and EngineLabelKey as a value
 var (
 	EngineLabelKey = "context"
-	matchLabelUID  = map[string]string{}
+	matchLabelUID  = map[string][]string{}
 )
 
 // ChaosResultDetails contains chaosresult details
@@ -249,7 +248,7 @@ type GaugeMetrics struct {
 	ClusterScopedExperimentsRunCount         *prometheus.GaugeVec
 }
 
-// MonitoringEnabled contains existance/availability of chaosengines and chaosresults
+//MonitoringEnabled contains existance/availability of chaosEngines and chaosResults
 type MonitoringEnabled struct {
 	IsChaosResultsAvailable bool
 	IsChaosEnginesAvailable bool
