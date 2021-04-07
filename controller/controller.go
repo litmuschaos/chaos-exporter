@@ -56,6 +56,7 @@ func (gaugeMetrics *GaugeMetrics) RegisterFixedMetrics() {
 	prometheus.MustRegister(gaugeMetrics.ResultFailedExperiments)
 	prometheus.MustRegister(gaugeMetrics.ResultAwaitedExperiments)
 	prometheus.MustRegister(gaugeMetrics.ResultProbeSuccessPercentage)
+	prometheus.MustRegister(gaugeMetrics.ResultVerdict)
 	prometheus.MustRegister(gaugeMetrics.ExperimentStartTime)
 	prometheus.MustRegister(gaugeMetrics.ExperimentEndTime)
 	prometheus.MustRegister(gaugeMetrics.ExperimentChaosInjectedTime)

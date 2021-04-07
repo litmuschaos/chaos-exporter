@@ -24,14 +24,30 @@ import (
 //EngineLabelKey is key for ChaosEngineLabel
 var (
 	EngineLabelKey = "context"
-	matchLabelUID  = map[string][]string{}
+	resultStore    = map[string][]ResultData{}
+	matchVerdict   = map[string]*ResultData{}
 )
+
+// ResultData contains attributes to store metrics parameters
+// which can be used while handaling chaosresult deletion
+type ResultData struct {
+	Label                  string
+	AppKind                string
+	AppNs                  string
+	AppLabel               string
+	Verdict                string
+	Count                  int
+	ProbeSuccessPercentage float64
+}
 
 // ChaosResultDetails contains chaosresult details
 type ChaosResultDetails struct {
 	Name                  string
 	UID                   clientTypes.UID
 	Namespace             string
+	AppKind               string
+	AppNs                 string
+	AppLabel              string
 	PassedExperiments     float64
 	FailedExperiments     float64
 	AwaitedExperiments    float64
@@ -42,6 +58,7 @@ type ChaosResultDetails struct {
 	TotalDuration         float64
 	ChaosEngineName       string
 	ChaosEngineLabel      string
+	Verdict               string
 }
 
 // NamespacedScopeMetrics contains metrics for the chaos namespace
@@ -60,7 +77,7 @@ type AWSConfig struct {
 	Service     string
 }
 
-// InitializeGaugeMetrics ...
+// InitializeGaugeMetrics defines schema of all the metrics
 func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 	gaugeMetrics.ResultPassedExperiments = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "litmuschaos",
@@ -96,6 +113,16 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 		Help:      "ProbeSuccesPercentage for the experiments",
 	},
 		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context"},
+	)
+
+	gaugeMetrics.ResultVerdict = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "",
+		Name:      "experiment_verdict",
+		Help:      "Verdict of the experiments",
+	},
+		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context", "chaosresult_verdict",
+			"probe_success_percentage", "app_label", "app_namespace", "app_kind"},
 	)
 
 	gaugeMetrics.ExperimentStartTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -232,6 +259,7 @@ type GaugeMetrics struct {
 	ResultFailedExperiments                  *prometheus.GaugeVec
 	ResultAwaitedExperiments                 *prometheus.GaugeVec
 	ResultProbeSuccessPercentage             *prometheus.GaugeVec
+	ResultVerdict                            *prometheus.GaugeVec
 	ExperimentStartTime                      *prometheus.GaugeVec
 	ExperimentEndTime                        *prometheus.GaugeVec
 	ExperimentTotalDuration                  *prometheus.GaugeVec
