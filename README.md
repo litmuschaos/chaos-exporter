@@ -38,7 +38,7 @@
 </tr>
 <tr>
   <th>Notes</th>
-  <td>The <code>litmuschaos_passed_experiments</code> contains the commulative sum of passed runs for the given ChaosResult.</td>
+  <td>The <code>litmuschaos_passed_experiments</code> contains the cumulative sum of passed runs for the given ChaosResult.</td>
 </tr>
 </table>
 
@@ -61,7 +61,7 @@
 </tr>
 <tr>
   <th>Notes</th>
-  <td>The <code>litmuschaos_failed_experiments</code> contains the commulative sum of failed runs for the given ChaosResult.</td>
+  <td>The <code>litmuschaos_failed_experiments</code> contains the cumulative sum of failed runs for the given ChaosResult.</td>
 </tr>
 </table>
 
@@ -202,6 +202,29 @@
   <td>The <code>litmuschaos_experiment_total_duration</code> defines the total chaos duration of the experiment. It is time interval betweeen start time and the end time.</td>
 </tr>
 </table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_experiment_verdict</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains the experiment verdict details</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td>ChaosResult</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_experiment_verdict{app_kind="deployment",app_label="run=nginx",app_namespace="nginx",chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus",chaosresult_verdict="Pass",probe_success_percentage="100.000000"} 1</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_experiment_verdict</code> sets the metrics based on the ChaosResult verdict. In case of Awaited verdict it always set to 0. In case of other verdicts it contains value as 1. But if the verdict is repeated more than TSDB_SCRAPE_INTERVAL(passed as ENV) then it will set to 0 until verdict change to a different value.</td>
+</tr>
+</table>
 <hr>
 
 ### NamespacedScoped Metrics
@@ -209,7 +232,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_namespace_scoped_passed_experiments"</code></td>
+  <td><code>litmuschaos_namespace_scoped_passed_experiments</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -232,7 +255,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_namespace_scoped_failed_experiments"</code></td>
+  <td><code>litmuschaos_namespace_scoped_failed_experiments</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -255,7 +278,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_namespace_scoped_awaited_experiments"</code></td>
+  <td><code>litmuschaos_namespace_scoped_awaited_experiments</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -278,7 +301,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_namespace_scoped_experiments_run_count"</code></td>
+  <td><code>litmuschaos_namespace_scoped_experiments_run_count</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -301,7 +324,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_namespace_scoped_experiments_installed_count"</code></td>
+  <td><code>litmuschaos_namespace_scoped_experiments_installed_count</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -327,7 +350,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_cluster_scoped_passed_experiments"</code></td>
+  <td><code>litmuschaos_cluster_scoped_passed_experiments</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -350,7 +373,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_cluster_scoped_failed_experiments"</code></td>
+  <td><code>litmuschaos_cluster_scoped_failed_experiments</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -373,7 +396,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_cluster_scoped_awaited_experiments"</code></td>
+  <td><code>litmuschaos_cluster_scoped_awaited_experiments</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -396,7 +419,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_cluster_scoped_experiments_run_count"</code></td>
+  <td><code>litmuschaos_cluster_scoped_experiments_run_count</code></td>
 </tr>
 <tr>
   <th>Description</th>
@@ -419,7 +442,7 @@
 <table>
 <tr>
   <th>Metrics Name</th>
-  <td><code>litmuschaos_cluster_scoped_experiments_installed_count"</code></td>
+  <td><code>litmuschaos_cluster_scoped_experiments_installed_count</code></td>
 </tr>
 <tr>
   <th>Description</th>
