@@ -22,6 +22,8 @@ spec:
         env:
         - name: WATCH_NAMESPACE
           value: ''
+        - name: TSDB_SCRAPE_INTERVAL
+          value: ''
       serviceAccountName: litmus
 ---
 apiVersion: v1
