@@ -154,7 +154,6 @@ var _ = BeforeSuite(func() {
 				},
 			},
 			JobCleanUpPolicy: "retain",
-			Monitoring:       true,
 			EngineState:      "active",
 			Experiments: []v1alpha1.ExperimentList{
 				{
