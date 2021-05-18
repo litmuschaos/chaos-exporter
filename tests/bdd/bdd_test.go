@@ -17,9 +17,9 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -27,6 +27,8 @@ import (
 	"time"
 
 	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
+	"github.com/pkg/errors"
 
 	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
 	. "github.com/onsi/ginkgo"
@@ -35,18 +37,18 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	//auth for gcp: optional
-	"github.com/litmuschaos/chaos-exporter/controller"
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-exporter/pkg/log"
+
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var kubeconfig = os.Getenv("HOME") + "/.kube/config"
-var config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
-var client = clients.ClientSets{}
+var (
+	client     clients.ClientSets
+	kubeconfig string
+)
 
 func TestChaos(t *testing.T) {
 
@@ -54,30 +56,57 @@ func TestChaos(t *testing.T) {
 	RunSpecs(t, "BDD test")
 }
 
-var _ = BeforeSuite(func() {
-	client.KubeClient, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		fmt.Println(err)
-	}
-	client.LitmusClient, err = chaosClient.NewForConfig(config)
-	if err != nil {
-		fmt.Println(err)
-	}
+func init() {
+	flag.StringVar(&kubeconfig, "kubeconfig", os.Getenv("HOME")+"/.kube/config", "path to kubeconfig to invoke kubernetes API calls")
+}
 
-	cmd := exec.Command("kubectl", "apply", "-f", "https://litmuschaos.github.io/litmus/litmus-operator-ci.yaml")
-	if err := cmd.Start(); err != nil {
-		log.Fatalf("Failed to create operator: %v", err)
-	}
-	time.Sleep(30 * time.Second)
-	podDeleteRbac := exec.Command("kubectl", "apply", "-f", "../manifest/pod-delete-rbac.yaml", "-n", "litmus")
-	if err := podDeleteRbac.Start(); err != nil {
-		log.Fatalf("Failed to create pod-delete rbac: %v", err)
-	}
-	experimentCreate := exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos/master?file=charts/generic/experiments.yaml", "-n", "litmus")
-	if err := experimentCreate.Start(); err != nil {
-		log.Fatalf("Failed to create experiment: %v", err)
-	}
-	time.Sleep(30 * time.Second)
+var _ = BeforeSuite(func() {
+
+	// Getting kubeconfig and generate clientSets
+	flag.Parse()
+
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	Expect(err).To(BeNil(), "failed to get config")
+
+	client.KubeClient, err = kubernetes.NewForConfig(config)
+	Expect(err).To(BeNil(), "failed to generate k8sClientSet")
+
+	client.LitmusClient, err = chaosClient.NewForConfig(config)
+	Expect(err).To(BeNil(), "failed to generate litmusClientSet")
+
+	By("Installing Litmus")
+	err = exec.Command("kubectl", "apply", "-f", "https://litmuschaos.github.io/litmus/litmus-operator-ci.yaml").Run()
+	Expect(err).To(BeNil(), "unable to install litmus")
+
+	err = retry.
+		Times(uint(180 / 2)).
+		Wait(time.Duration(2) * time.Second).
+		Try(func(attempt uint) error {
+			podSpec, err := client.KubeClient.CoreV1().Pods("litmus").List(metav1.ListOptions{LabelSelector: "name=chaos-operator"})
+			if err != nil || len(podSpec.Items) == 0 {
+				return errors.Errorf("unable to list chaos-operator, err: %v", err)
+			}
+			for _, v := range podSpec.Items {
+				if v.Status.Phase != "Running" {
+					return errors.Errorf("chaos-operator is not in running state, phase: %v", v.Status.Phase)
+				}
+			}
+			return nil
+		})
+
+	Expect(err).To(BeNil(), "the chaos-operator is not in running state")
+	log.Info("litmus installed successfully")
+
+	By("Installing RBAC")
+	err = exec.Command("kubectl", "apply", "-f", "../manifest/pod-delete-rbac.yaml", "-n", "litmus").Run()
+	Expect(err).To(BeNil(), "unable to create RBAC Permissions")
+	log.Info("RBAC created")
+
+	By("Installing Generic Experiments")
+	err = exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos/master?file=charts/generic/experiments.yaml", "-n", "litmus").Run()
+	Expect(err).To(BeNil(), "unable to install experiments")
+	log.Info("generic experiments created")
+
 	By("Creating nginx deployment")
 	deployment := &appv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -121,18 +150,20 @@ var _ = BeforeSuite(func() {
 			},
 		},
 	}
-	_, err := client.KubeClient.AppsV1().Deployments("litmus").Create(deployment)
-	if err != nil {
-		fmt.Println("Deployment is not created and error is ", err)
-	}
+	_, err = client.KubeClient.AppsV1().Deployments("litmus").Create(deployment)
+	Expect(err).To(
+		BeNil(),
+		"while creating nginx deployment in namespace litmus",
+	)
+	log.Info("nginx deployment created")
 
-	time.Sleep(30 * time.Second)
-	cmd = exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig="+os.Getenv("HOME")+"/.kube/config")
-	if err := cmd.Start(); err != nil {
-		log.Fatalf("Failed to start exporter: %v", err)
-	}
+	cmd := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig="+kubeconfig)
+	err = cmd.Start()
+	Expect(err).To(
+		BeNil(),
+		"failed while started chaos-exporter",
+	)
 
-	time.Sleep(10 * time.Second)
 	//Creating chaosEngine
 	By("Creating ChaosEngine")
 	chaosEngine := &v1alpha1.ChaosEngine{
@@ -158,8 +189,8 @@ var _ = BeforeSuite(func() {
 			Experiments: []v1alpha1.ExperimentList{
 				{
 					Name: "pod-delete",
-					Spec: litmuschaosv1alpha1.ExperimentAttributes{
-						Components: litmuschaosv1alpha1.ExperimentComponents{
+					Spec: v1alpha1.ExperimentAttributes{
+						Components: v1alpha1.ExperimentComponents{
 							ExperimentImage: "litmuschaos/go-runner:ci",
 						},
 					},
@@ -169,30 +200,37 @@ var _ = BeforeSuite(func() {
 	}
 
 	_, err = client.LitmusClient.ChaosEngines("litmus").Create(chaosEngine)
-	Expect(err).To(BeNil())
+	Expect(err).To(
+		BeNil(),
+		"while building ChaosEngine engine-nginx in namespace litmus",
+	)
 
-	time.Sleep(30 * time.Second)
+	log.Info("chaos engine created")
 })
 
 var _ = Describe("BDD on chaos-exporter", func() {
 
 	// BDD case 1
-	Context("Chaos Engine failed experiments", func() {
+	Context("Check availabiity of chaos-runner", func() {
+		It("chaos-runner should be present", func() {
+			err := retry.
+				Times(uint(180 / 2)).
+				Wait(time.Duration(2) * time.Second).
+				Try(func(attempt uint) error {
+					pod, err := client.KubeClient.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					if err != nil {
+						return errors.Errorf("unable to get chaos-runner pod, err: %v", err)
+					}
+					if pod.Status.Phase != v1.PodRunning && pod.Status.Phase != v1.PodSucceeded {
+						return errors.Errorf("chaos runner is not in running state, phase: %v", pod.Status.Phase)
+					}
+					return nil
+				})
 
-		It("should be a zero failed experiments", func() {
-			By("Checking experiments metrics")
-
-			gaugeMetrics := controller.GaugeMetrics{}
-			overallChaosResults := litmuschaosv1alpha1.ChaosResultList{}
-			gaugeMetrics.InitializeGaugeMetrics().
-				RegisterFixedMetrics()
-			monitoringEnabled := controller.MonitoringEnabled{
-				IsChaosResultsAvailable: true,
-				IsChaosEnginesAvailable: true,
+			if err != nil {
+				log.Errorf("The chaos-runner is not in running state, err: %v", err)
 			}
-			err := gaugeMetrics.GetLitmusChaosMetrics(client, &overallChaosResults, &monitoringEnabled)
-			Expect(err).To(BeNil())
-
+			log.Info("runner pod created")
 		})
 	})
 
@@ -201,7 +239,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 		It("Should return prometheus metrics", func() {
 			By("Running Exporter and Sending get request to metrics")
 			// wait for execution of exporter
-			log.Println("\nSleeping for 60 second and wait for exporter to start")
+			log.Info("Sleeping for 120 second and wait for exporter to start")
 			time.Sleep(120 * time.Second)
 
 			response, err := http.Get("http://127.0.0.1:8080/metrics")
@@ -235,7 +273,6 @@ var _ = Describe("BDD on chaos-exporter", func() {
 
 				By("Should be matched with engine_waiting_experiments regx")
 				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_awaited_experiments{chaosengine_context="",chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0`))
-
 			}
 		})
 	})
@@ -244,12 +281,12 @@ var _ = Describe("BDD on chaos-exporter", func() {
 // deleting all unused resources
 var _ = AfterSuite(func() {
 
-	By("Deleting chaosengine CRD")
-	ceDeleteCRDs := exec.Command("kubectl", "delete", "crds", "chaosengines.litmuschaos.io").Run()
-	Expect(ceDeleteCRDs).To(BeNil())
+	By("Deleting chaosengines")
+	err := exec.Command("kubectl", "delete", "chaosengines", "--all", "-n", "litmus").Run()
+	Expect(err).To(BeNil())
 
-	By("Deleting namespace litmus")
-	deleteNS := exec.Command("kubectl", "delete", "ns", "litmus").Run()
+	By("Uninstalling litmus")
+	deleteNS := exec.Command("kubectl", "delete", "-f", "https://litmuschaos.github.io/litmus/litmus-operator-ci.yaml").Run()
 	Expect(deleteNS).To(BeNil())
 
 })

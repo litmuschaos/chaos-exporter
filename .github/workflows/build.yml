@@ -55,7 +55,7 @@ jobs:
           DOCKER_IMAGE: chaos-exporter
           DOCKER_TAG: ci
         run: |
-          make build-chaos-exporter
+          make build
 
   tests:
     runs-on: ubuntu-latest
