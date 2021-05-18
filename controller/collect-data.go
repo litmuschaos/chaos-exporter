@@ -67,7 +67,9 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		setEndTime(events).
 		setChaosInjectTime(events).
 		setChaosEngineName(chaosResult.Spec.EngineName).
-		setChaosEngineLabel(engine.Labels[EngineLabelKey]).
+		setChaosEngineContext(engine.Labels[EngineContext]).
+		setChaosInjectLabel().
+		setWorkflowName(engine.Labels[WorkFlowName]).
 		setAppLabel(engine.Spec.Appinfo.Applabel).
 		setAppNs(engine.Spec.Appinfo.Appns).
 		setAppKind(engine.Spec.Appinfo.AppKind).
@@ -151,9 +153,26 @@ func (resultDetails *ChaosResultDetails) setAppKind(appKind string) *ChaosResult
 	return resultDetails
 }
 
-// setChaosEngineLabel sets the chaosEngine label inside resultDetails struct
-func (resultDetails *ChaosResultDetails) setChaosEngineLabel(engineLabel string) *ChaosResultDetails {
-	resultDetails.ChaosEngineLabel = engineLabel
+// setChaosEngineContext sets the chaosEngine context inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setChaosEngineContext(engineLabel string) *ChaosResultDetails {
+	resultDetails.ChaosEngineContext = engineLabel
+	return resultDetails
+}
+
+// setWorkflowName sets the workflow name inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setWorkflowName(workflowName string) *ChaosResultDetails {
+	resultDetails.WorkflowName = workflowName
+	return resultDetails
+}
+
+// setChaosInjectLabel sets the chaos inject label inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setChaosInjectLabel() *ChaosResultDetails {
+	injectTime := ""
+	if resultDetails.InjectionTime != 0 {
+		injectTime = strconv.Itoa(int(resultDetails.InjectionTime))
+	}
+	resultDetails.ChaosInjectLabel = injectTime
+
 	return resultDetails
 }
 
@@ -190,7 +209,7 @@ func (resultDetails *ChaosResultDetails) setChaosInjectTime(events corev1.EventL
 			chaosInjectTime = maximum(chaosInjectTime, event.LastTimestamp.Unix())
 		}
 	}
-	resultDetails.InjectionTime = float64(chaosInjectTime)
+	resultDetails.InjectionTime = chaosInjectTime
 	return resultDetails
 }
 
