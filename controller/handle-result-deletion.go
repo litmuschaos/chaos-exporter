@@ -32,7 +32,9 @@ func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newC
 					setAppNs(value.AppNs).
 					setAppKind(value.AppKind).
 					setChaosEngineName(oldResult.Spec.EngineName).
-					setChaosEngineLabel(value.Label)
+					setChaosEngineContext(value.ChaosEngineContext).
+					setWorkflowName(value.WorkFlowName)
+				resultDetails.ChaosInjectLabel = value.ChaosInjectLabel
 
 				gaugeMetrics.unsetResultChaosMetrics(resultDetails)
 			}
@@ -42,38 +44,52 @@ func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newC
 	}
 }
 
-// unsetVerdictMetrics unset the metrics when chaosresult verdict changes
+// unsetOutdatedMetrics unset the metrics when chaosresult verdict changes
 // if same chaosresult is continuously repeated more than scrape interval then it sets the metrics value to 0
-func (gaugeMetrics *GaugeMetrics) unsetVerdictMetrics(resultDetails ChaosResultDetails) float64 {
+func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResultDetails) float64 {
 	scrapeTime, _ := strconv.Atoi(getEnv("TSDB_SCRAPE_INTERVAL", "10"))
 	result, ok := matchVerdict[string(resultDetails.UID)]
-	if ok {
-		// if verdict is different then delete the older metrics having outdated verdict
-		if result.Verdict != resultDetails.Verdict {
-			gaugeMetrics.ResultVerdict.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineLabel, result.Verdict,
-				fmt.Sprintf("%f", result.ProbeSuccessPercentage), resultDetails.AppLabel, resultDetails.AppNs, resultDetails.AppKind)
+	reset := false
 
-			// update the values inside matchVerdict
-			matchVerdict[string(resultDetails.UID)] = result.setCount(1).
-				setVerdict(resultDetails.Verdict).
-				setProbeSuccesPercentage(resultDetails.ProbeSuccesPercentage)
-			return float64(1)
-		} else {
-			result.Count++
-			matchVerdict[string(resultDetails.UID)] = result
+	switch ok {
+	case true:
+		switch {
+		// if verdict is different then delete the older metrics having outdated verdict
+		case result.Verdict != resultDetails.Verdict:
+			gaugeMetrics.ResultVerdict.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName,
+				resultDetails.ChaosEngineContext, result.Verdict, fmt.Sprintf("%f", result.ProbeSuccessPercentage), resultDetails.AppLabel,
+				resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, result.ChaosInjectLabel)
+			result.Count = 1
+		// if chaos injectionTime is different then delete the older metrics having outdated data
+		case result.ChaosInjectLabel != resultDetails.ChaosInjectLabel:
+			gaugeMetrics.ResultVerdict.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName,
+				resultDetails.ChaosEngineContext, result.Verdict, fmt.Sprintf("%f", result.ProbeSuccessPercentage), resultDetails.AppLabel,
+				resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, result.ChaosInjectLabel)
+			gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName,
+				resultDetails.ChaosEngineContext, resultDetails.WorkflowName, result.ChaosInjectLabel)
+			result.Count = 1
+		default:
+			// if time passed scrape time then reset the value to 0
 			if result.Count >= scrapeTime {
-				return float64(0)
+				reset = true
+			} else {
+				result.Count++
 			}
-			return float64(1)
 		}
+	default:
+		result = initialiseResultData().
+			setCount(1)
 	}
 
 	// update the values inside matchVerdict
-	matchVerdict[string(resultDetails.UID)] = initialiseResultData().
-		setCount(1).
-		setVerdict(resultDetails.Verdict).
-		setProbeSuccesPercentage(resultDetails.ProbeSuccesPercentage)
-	return float64(0)
+	matchVerdict[string(resultDetails.UID)] = result.setVerdict(resultDetails.Verdict).
+		setProbeSuccesPercentage(resultDetails.ProbeSuccesPercentage).
+		setChaosInjectLabel(resultDetails.ChaosInjectLabel)
+
+	if reset {
+		return float64(0)
+	}
+	return float64(1)
 }
 
 // getEnv derived the ENVs and sets the default value if env contains empty value
@@ -89,7 +105,9 @@ func getEnv(key, defaultValue string) string {
 //can be used while handling chaosresult deletion
 func (resultDetails *ChaosResultDetails) setResultData() {
 	resultData := initialiseResultData().
-		setLabel(resultDetails.ChaosEngineLabel).
+		setContext(resultDetails.ChaosEngineContext).
+		setWorkflowName(resultDetails.WorkflowName).
+		setChaosInjectLabel(resultDetails.ChaosInjectLabel).
 		setAppKind(resultDetails.AppKind).
 		setNs(resultDetails.AppNs).
 		setAppLabel(resultDetails.AppLabel).
@@ -109,9 +127,21 @@ func initialiseResultData() *ResultData {
 	return &ResultData{}
 }
 
-// setLabel sets the label inside resultData struct
-func (resultData *ResultData) setLabel(label string) *ResultData {
-	resultData.Label = label
+// setContext sets the engine context inside resultData struct
+func (resultData *ResultData) setContext(context string) *ResultData {
+	resultData.ChaosEngineContext = context
+	return resultData
+}
+
+// setWorkflowName sets the workflow name inside resultData struct
+func (resultData *ResultData) setWorkflowName(workflowName string) *ResultData {
+	resultData.WorkFlowName = workflowName
+	return resultData
+}
+
+// setChaosInjectLabel sets the chaos injection inside resultData struct
+func (resultData *ResultData) setChaosInjectLabel(injectTime string) *ResultData {
+	resultData.ChaosInjectLabel = injectTime
 	return resultData
 }
 
