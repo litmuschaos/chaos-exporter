@@ -23,15 +23,18 @@ import (
 
 //EngineLabelKey is key for ChaosEngineLabel
 var (
-	EngineLabelKey = "context"
-	resultStore    = map[string][]ResultData{}
-	matchVerdict   = map[string]*ResultData{}
+	EngineContext = "context"
+	WorkFlowName  = "workflow_name"
+	resultStore   = map[string][]ResultData{}
+	matchVerdict  = map[string]*ResultData{}
 )
 
 // ResultData contains attributes to store metrics parameters
 // which can be used while handaling chaosresult deletion
 type ResultData struct {
-	Label                  string
+	ChaosEngineContext     string
+	WorkFlowName           string
+	ChaosInjectLabel       string
 	AppKind                string
 	AppNs                  string
 	AppLabel               string
@@ -54,11 +57,13 @@ type ChaosResultDetails struct {
 	ProbeSuccesPercentage float64
 	StartTime             float64
 	EndTime               float64
-	InjectionTime         float64
+	InjectionTime         int64
 	TotalDuration         float64
 	ChaosEngineName       string
-	ChaosEngineLabel      string
+	ChaosEngineContext    string
 	Verdict               string
+	WorkflowName          string
+	ChaosInjectLabel      string
 }
 
 // NamespacedScopeMetrics contains metrics for the chaos namespace
@@ -103,7 +108,7 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 		Name:      "awaited_experiments",
 		Help:      "Total number of awaited experiments",
 	},
-		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context"},
+		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context", "workflow_name", "chaos_injection_time"},
 	)
 
 	gaugeMetrics.ResultProbeSuccessPercentage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -122,7 +127,7 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 		Help:      "Verdict of the experiments",
 	},
 		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context", "chaosresult_verdict",
-			"probe_success_percentage", "app_label", "app_namespace", "app_kind"},
+			"probe_success_percentage", "app_label", "app_namespace", "app_kind", "workflow_name", "chaos_injection_time"},
 	)
 
 	gaugeMetrics.ExperimentStartTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
