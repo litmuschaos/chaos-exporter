@@ -23,10 +23,11 @@ import (
 
 //EngineLabelKey is key for ChaosEngineLabel
 var (
-	EngineContext = "context"
-	WorkFlowName  = "workflow_name"
-	resultStore   = map[string][]ResultData{}
-	matchVerdict  = map[string]*ResultData{}
+	EngineContext       = "context"
+	WorkFlowName        = "workflow_name"
+	resultStore         = map[string][]ResultData{}
+	matchVerdict        = map[string]*ResultData{}
+	injectionTimeFilter = "enable"
 )
 
 // ResultData contains attributes to store metrics parameters
@@ -109,6 +110,15 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 		Help:      "Total number of awaited experiments",
 	},
 		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context", "workflow_name", "chaos_injection_time"},
+	)
+
+	gaugeMetrics.ResultAwaitedExperimentsWithoutInjectionTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: "litmuschaos",
+		Subsystem: "",
+		Name:      "awaited_experiments",
+		Help:      "Total number of awaited experiments",
+	},
+		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context", "workflow_name"},
 	)
 
 	gaugeMetrics.ResultProbeSuccessPercentage = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -260,25 +270,26 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 
 // GaugeMetrics contains all the metrics definition
 type GaugeMetrics struct {
-	ResultPassedExperiments                  *prometheus.GaugeVec
-	ResultFailedExperiments                  *prometheus.GaugeVec
-	ResultAwaitedExperiments                 *prometheus.GaugeVec
-	ResultProbeSuccessPercentage             *prometheus.GaugeVec
-	ResultVerdict                            *prometheus.GaugeVec
-	ExperimentStartTime                      *prometheus.GaugeVec
-	ExperimentEndTime                        *prometheus.GaugeVec
-	ExperimentTotalDuration                  *prometheus.GaugeVec
-	ExperimentChaosInjectedTime              *prometheus.GaugeVec
-	NamespaceScopedTotalPassedExperiments    *prometheus.GaugeVec
-	NamespaceScopedTotalFailedExperiments    *prometheus.GaugeVec
-	NamespaceScopedTotalAwaitedExperiments   *prometheus.GaugeVec
-	NamespaceScopedExperimentsInstalledCount *prometheus.GaugeVec
-	NamespaceScopedExperimentsRunCount       *prometheus.GaugeVec
-	ClusterScopedTotalPassedExperiments      *prometheus.GaugeVec
-	ClusterScopedTotalFailedExperiments      *prometheus.GaugeVec
-	ClusterScopedTotalAwaitedExperiments     *prometheus.GaugeVec
-	ClusterScopedExperimentsInstalledCount   *prometheus.GaugeVec
-	ClusterScopedExperimentsRunCount         *prometheus.GaugeVec
+	ResultPassedExperiments                      *prometheus.GaugeVec
+	ResultFailedExperiments                      *prometheus.GaugeVec
+	ResultAwaitedExperiments                     *prometheus.GaugeVec
+	ResultAwaitedExperimentsWithoutInjectionTime *prometheus.GaugeVec
+	ResultProbeSuccessPercentage                 *prometheus.GaugeVec
+	ResultVerdict                                *prometheus.GaugeVec
+	ExperimentStartTime                          *prometheus.GaugeVec
+	ExperimentEndTime                            *prometheus.GaugeVec
+	ExperimentTotalDuration                      *prometheus.GaugeVec
+	ExperimentChaosInjectedTime                  *prometheus.GaugeVec
+	NamespaceScopedTotalPassedExperiments        *prometheus.GaugeVec
+	NamespaceScopedTotalFailedExperiments        *prometheus.GaugeVec
+	NamespaceScopedTotalAwaitedExperiments       *prometheus.GaugeVec
+	NamespaceScopedExperimentsInstalledCount     *prometheus.GaugeVec
+	NamespaceScopedExperimentsRunCount           *prometheus.GaugeVec
+	ClusterScopedTotalPassedExperiments          *prometheus.GaugeVec
+	ClusterScopedTotalFailedExperiments          *prometheus.GaugeVec
+	ClusterScopedTotalAwaitedExperiments         *prometheus.GaugeVec
+	ClusterScopedExperimentsInstalledCount       *prometheus.GaugeVec
+	ClusterScopedExperimentsRunCount             *prometheus.GaugeVec
 }
 
 //MonitoringEnabled contains existance/availability of chaosEngines and chaosResults
