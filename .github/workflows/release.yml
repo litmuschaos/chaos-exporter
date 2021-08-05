@@ -71,7 +71,7 @@ jobs:
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: |
-          make push-chaos-exporter
+          make push
 
       - name: Build & Push Docker Image with latest tag
         env:
@@ -81,7 +81,7 @@ jobs:
           DNAME: ${{ secrets.DNAME }}
           DPASS: ${{ secrets.DPASS }}
         run: |
-          make push-chaos-exporter
+          make push
 
   tests:
     needs: pre-checks
