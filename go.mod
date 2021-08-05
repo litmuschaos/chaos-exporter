@@ -3,25 +3,23 @@ module github.com/litmuschaos/chaos-exporter
 go 1.14
 
 require (
-	github.com/aws/aws-sdk-go v1.34.18
-	github.com/imdario/mergo v0.3.9 // indirect
+	github.com/aws/aws-sdk-go v1.36.27
 	github.com/litmuschaos/chaos-operator v0.0.0-20210415200829-e74fffdeac4c
+	github.com/litmuschaos/litmus-go v0.0.0-20210517045408-d6d4797d4d0d
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.6.0
-	github.com/sirupsen/logrus v1.4.2
+	github.com/sirupsen/logrus v1.7.0
+	github.com/stretchr/testify v1.5.1 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/sys v0.0.0-20210228012217-479acdf4ea46 // indirect
 	golang.org/x/text v0.3.5 // indirect
-	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66 // indirect
 )
 
 replace (
