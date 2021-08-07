@@ -17,7 +17,7 @@ RUN go env
 RUN CGO_ENABLED=0 go build -o /output/chaos-exporter -v ./cmd/exporter/
 
 # Packaging stage
-FROM alpine:latest
+FROM alpine:3
 
 LABEL maintainer="LitmusChaos"
 
