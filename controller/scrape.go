@@ -158,8 +158,12 @@ func (gaugeMetrics *GaugeMetrics) setNamespacedChaosMetrics(namespacedScopeMetri
 
 // setResultChaosMetrics sets metrics for the given chaosresult details
 func (gaugeMetrics *GaugeMetrics) setResultChaosMetrics(resultDetails ChaosResultDetails, verdictValue float64) {
-	gaugeMetrics.ResultAwaitedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName,
-		resultDetails.ChaosInjectLabel).Set(resultDetails.AwaitedExperiments)
+	if strings.ToLower(injectionTimeFilter) == "disable" {
+		gaugeMetrics.ResultAwaitedExperimentsWithoutInjectionTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName).Set(resultDetails.AwaitedExperiments)
+	} else {
+		gaugeMetrics.ResultAwaitedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName,
+			resultDetails.ChaosInjectLabel).Set(resultDetails.AwaitedExperiments)
+	}
 	gaugeMetrics.ResultPassedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.PassedExperiments)
 	gaugeMetrics.ResultFailedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.FailedExperiments)
 	gaugeMetrics.ResultProbeSuccessPercentage.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.ProbeSuccesPercentage)
@@ -179,6 +183,11 @@ func (gaugeMetrics *GaugeMetrics) setResultChaosMetrics(resultDetails ChaosResul
 
 // unsetResultChaosMetrics unset metrics for the given chaosresult details
 func (gaugeMetrics *GaugeMetrics) unsetResultChaosMetrics(resultDetails *ChaosResultDetails) {
+	if strings.ToLower(injectionTimeFilter) == "disable" {
+		gaugeMetrics.ResultAwaitedExperimentsWithoutInjectionTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName)
+	} else {
+		gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName, resultDetails.ChaosInjectLabel)
+	}
 	gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName, resultDetails.ChaosInjectLabel)
 	gaugeMetrics.ResultPassedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
 	gaugeMetrics.ResultFailedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
