@@ -24,6 +24,8 @@ spec:
           value: ''
         - name: TSDB_SCRAPE_INTERVAL
           value: ''
+        - name: INJECTION_TIME_FILTER
+          value: 'enable'
       serviceAccountName: litmus
 ---
 apiVersion: v1
