@@ -29,7 +29,6 @@ import (
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var err error
@@ -76,14 +75,19 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 		}
 
 		// deriving metrics data from the chaosresult
-		err = resultDetails.getExperimentMetricsFromResult(&chaosresult, clients)
+		skip, err := resultDetails.getExperimentMetricsFromResult(&chaosresult, clients)
 		if err != nil {
-			// k8serrors.IsNotFound(err) checking k8s resource is found or not,
-			// It will skip this result if k8s resource is not found.
-			if k8serrors.IsNotFound(err) {
-				continue
-			}
 			return err
+		}
+		// generating the aggeregate metrics from per chaosresult metric
+		namespacedScopeMetrics.AwaitedExperiments += resultDetails.AwaitedExperiments
+		namespacedScopeMetrics.PassedExperiments += resultDetails.PassedExperiments
+		namespacedScopeMetrics.FailedExperiments += resultDetails.FailedExperiments
+		namespacedScopeMetrics.ExperimentsInstalledCount++
+		namespacedScopeMetrics.ExperimentRunCount += resultDetails.AwaitedExperiments + resultDetails.PassedExperiments + resultDetails.FailedExperiments
+		// skipping exporting metrics for the results, whose chaosengine is either completed or not exist
+		if skip {
+			continue
 		}
 		//engineCount is storing count of chaosengines
 		//It is helping in keeping track of available chaosengines associated with chaosresults
@@ -104,14 +108,7 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 			"ResultVerdict":          resultDetails.Verdict,
 		})
 
-		// generating the aggeregate metrics from per chaosresult metric
-		namespacedScopeMetrics.AwaitedExperiments += resultDetails.AwaitedExperiments
-		namespacedScopeMetrics.PassedExperiments += resultDetails.PassedExperiments
-		namespacedScopeMetrics.FailedExperiments += resultDetails.FailedExperiments
-		namespacedScopeMetrics.ExperimentsInstalledCount++
-		namespacedScopeMetrics.ExperimentRunCount += resultDetails.AwaitedExperiments + resultDetails.PassedExperiments + resultDetails.FailedExperiments
 		// setting chaosresult metrics for the given chaosresult
-
 		verdictValue := gaugeMetrics.unsetOutdatedMetrics(resultDetails)
 		gaugeMetrics.setResultChaosMetrics(resultDetails, verdictValue)
 		// setting chaosresult aws metrics for the given chaosresult, which can be used for cloudwatch
@@ -122,7 +119,7 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	if engineCount == 0 {
 		if monitoringEnabled.IsChaosEnginesAvailable && monitoringEnabled.IsChaosResultsAvailable {
 			monitoringEnabled.IsChaosEnginesAvailable = false
-			log.Info("[Wait]: Hold on, no chaosengine found ... ")
+			log.Info("[Wait]: Hold on, no active chaosengine found ... ")
 		}
 	}
 	if !monitoringEnabled.IsChaosEnginesAvailable && engineCount != 0 {
