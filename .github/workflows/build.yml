@@ -1,7 +1,7 @@
 name: Build
 on:
   pull_request:
-    branches: [master]
+    branches: [dev]
     types: [opened, synchronize, reopened]
 
 jobs:
@@ -98,7 +98,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'docker.io/litmuschaos/chaos-exporter:ci'
+          image-ref: 'docker.io/litmuschaos/chaos-exporter:dev'
           format: 'table'
           exit-code: '0'
           ignore-unfixed: true
