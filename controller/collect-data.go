@@ -7,8 +7,10 @@ import (
 
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
+	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientTypes "k8s.io/apimachinery/pkg/types"
 )
@@ -39,22 +41,27 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoring
 }
 
 // getExperimentMetricsFromResult derive all the metrics data from the chaosresult and set into resultDetails struct
-func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) error {
+func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error) {
 	verdict := strings.ToLower(chaosResult.Status.ExperimentStatus.Verdict)
 	probeSuccesPercentage, err := getProbeSuccessPercentage(chaosResult)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	engine, err := clients.LitmusClient.ChaosEngines(chaosResult.Namespace).Get(chaosResult.Spec.EngineName, metav1.GetOptions{})
 	if err != nil {
-		return err
+		// k8serrors.IsNotFound(err) checking k8s resource is found or not,
+		// It will skip this result if k8s resource is not found.
+		if k8serrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, err
 	}
 
 	// deriving all the events present inside specific chaosengine
 	events, err := getEventsForSpecificInvolvedResource(clients, engine.UID, chaosResult.Namespace)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// setting all the values inside resultdetails struct
@@ -77,7 +84,12 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		setVerdictCount(verdict, chaosResult).
 		setResultData()
 
-	return nil
+	// skipping exporting metrics for the chaos-engines, which are in completed state
+	if engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // initialiseResult create the new instance of the ChaosResultDetails struct
