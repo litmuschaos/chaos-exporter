@@ -2,7 +2,7 @@ name: Push
 on:
   push:
     branches:
-      - dev
+      - master
     tags-ignore:
       - '**'
 
@@ -110,7 +110,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'docker.io/litmuschaos/chaos-exporter:dev'
+          image-ref: 'docker.io/litmuschaos/chaos-exporter:ci'
           format: 'table'
           exit-code: '0'
           ignore-unfixed: true

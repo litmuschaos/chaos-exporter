@@ -1,6 +1,6 @@
 # Multi-stage docker build
 # Build stage
-FROM golang:1.16 AS builder
+FROM golang:alpine AS builder
 
 LABEL maintainer="LitmusChaos"
 
@@ -16,19 +16,13 @@ RUN go env
 
 RUN CGO_ENABLED=0 go build -o /output/chaos-exporter -v ./cmd/exporter/
 
-FROM golang:alpine as cert
-RUN apk --no-cache add ca-certificates
-
 # Packaging stage
-FROM scratch
+# Image source: https://github.com/litmuschaos/test-tools/blob/master/custom/hardened-alpine/infra/Dockerfile
+# The base image is non-root (have litmus user) with default litmus directory.
+FROM litmuschaos/infra-alpine
 
 LABEL maintainer="LitmusChaos"
 
-COPY --from=cert /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /output/chaos-exporter /
-
-USER 1001
-
+COPY --from=builder /output/chaos-exporter /litmus
 CMD ["./chaos-exporter"]
-
 EXPOSE 8080

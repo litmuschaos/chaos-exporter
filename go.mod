@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/aws/aws-sdk-go v1.36.27
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/litmuschaos/chaos-operator v0.0.0-20210415200829-e74fffdeac4c
 	github.com/litmuschaos/litmus-go v0.0.0-20210517045408-d6d4797d4d0d
 	github.com/nxadm/tail v1.4.8 // indirect
@@ -13,8 +14,7 @@ require (
 	github.com/prometheus/client_golang v1.6.0
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.5.1 // indirect
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
-	golang.org/x/sys v0.0.0-20210228012217-479acdf4ea46 // indirect
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/text v0.3.5 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	k8s.io/api v0.17.3
