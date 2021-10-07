@@ -14,7 +14,7 @@
 
   - AggregateMetrics: These metrics are derived from the all the chaosresults present inside `WATCH_NAMESPACE`. If `WATCH_NAMESPACE` is not defined then it derived metrics from all namespaces. It exposes total_passed_experiment, total_failed_experiment, total_awaited_experiment, experiment_run_count, experiment_installed_count metrices.
 
-  - ExperimentScoped: Individual experiment run status. It exposes passed_experiment, failed_experiment, awaited_experiment, probe_success_percentage, startTime, endTime, totalDuration, chaosInjectTime metrices.
+  - ExperimentScoped: Individual experiment run status. It exposes passed_experiment, failed_experiment, awaited_experiment, result_verdict,probe_success_percentage, startTime, endTime, totalDuration, chaosInjectTime metrices.
 
 ### ExperimentScoped Metrics
 
@@ -465,9 +465,7 @@
 
 ### Running Litmus Chaos Experiments in order to generate metrics
 
-- Follow the steps described [here](https://docs.litmuschaos.io/docs/getstarted/) 
-  to start running litmus chaos experiments ans storing chaos results. The chaos custom resources are used by the 
-  exporter to generate metrics. 
+- Follow the steps described [here](https://v1-docs.litmuschaos.io/docs/getstarted/) to run litmus chaos experiments which stores the chaos results. The chaos custom resources(chaosresult and chaosengine) are used by the exporter to generate metrics. 
   
 ### Running Chaos Exporter on the local Machine 
 
@@ -525,6 +523,11 @@ litmuschaos_passed_experiments{chaosengine_context="test",chaosengine_name="hell
 litmuschaos_probe_success_percentage{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 100
 ```
 
+## How do I contribute?
+
+You can contribute by raising issues, improving the documentation, contributing to the core framework and tooling, etc.
+
+Head over to the [Contribution guide](CONTRIBUTING.md)
 
 ## License
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter?ref=badge_large)
