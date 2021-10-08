@@ -1,7 +1,16 @@
 # Litmus Chaos Exporter
+
+[![Slack Channel](https://img.shields.io/badge/Slack-Join-purple)](https://slack.litmuschaos.io)
+![GitHub Workflow](https://github.com/litmuschaos/chaos-exporter/actions/workflows/push.yml/badge.svg?branch=master)
+[![Docker Pulls](https://img.shields.io/docker/pulls/litmuschaos/chaos-exporter.svg)](https://hub.docker.com/r/litmuschaos/chaos-exporter)
+[![GitHub issues](https://img.shields.io/github/issues/litmuschaos/chaos-exporter)](https://github.com/litmuschaos/chaos-exporter/issues)
+[![Twitter Follow](https://img.shields.io/twitter/follow/litmuschaos?style=social)](https://twitter.com/LitmusChaos)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5296/badge)](https://bestpractices.coreinfrastructure.org/projects/5296)
 [![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-exporter?branch=master)](https://bettercodehub.com/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/litmuschaos/chaos-exporter)](https://goreportcard.com/report/github.com/litmuschaos/chaos-exporter)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter?ref=badge_shield)
+[![YouTube Channel](https://img.shields.io/badge/YouTube-Subscribe-red)](https://www.youtube.com/channel/UCa57PMqmz_j0wnteRa9nCaw)
+<br><br>
 
 - This is a custom Prometheus and CloudWatch exporter to expose Litmus Chaos metrics. 
   To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
