@@ -42,7 +42,7 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoring
 
 // getExperimentMetricsFromResult derive all the metrics data from the chaosresult and set into resultDetails struct
 func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error) {
-	verdict := strings.ToLower(chaosResult.Status.ExperimentStatus.Verdict)
+	verdict := strings.ToLower(string(chaosResult.Status.ExperimentStatus.Verdict))
 	probeSuccesPercentage, err := getProbeSuccessPercentage(chaosResult)
 	if err != nil {
 		return false, err
@@ -69,7 +69,7 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		setUID(chaosResult.UID).
 		setNamespace(chaosResult.Namespace).
 		setProbeSuccesPercentage(probeSuccesPercentage).
-		setVerdict(chaosResult.Status.ExperimentStatus.Verdict).
+		setVerdict(string(chaosResult.Status.ExperimentStatus.Verdict)).
 		setStartTime(events).
 		setEndTime(events).
 		setChaosInjectTime(events).
