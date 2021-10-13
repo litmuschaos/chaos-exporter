@@ -1,7 +1,19 @@
 # Litmus Chaos Exporter
+<<<<<<< HEAD
+=======
+
+[![Slack Channel](https://img.shields.io/badge/Slack-Join-purple)](https://slack.litmuschaos.io)
+![GitHub Workflow](https://github.com/litmuschaos/chaos-exporter/actions/workflows/push.yml/badge.svg?branch=master)
+[![Docker Pulls](https://img.shields.io/docker/pulls/litmuschaos/chaos-exporter.svg)](https://hub.docker.com/r/litmuschaos/chaos-exporter)
+[![GitHub issues](https://img.shields.io/github/issues/litmuschaos/chaos-exporter)](https://github.com/litmuschaos/chaos-exporter/issues)
+[![Twitter Follow](https://img.shields.io/twitter/follow/litmuschaos?style=social)](https://twitter.com/LitmusChaos)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5296/badge)](https://bestpractices.coreinfrastructure.org/projects/5296)
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 [![BCH compliance](https://bettercodehub.com/edge/badge/litmuschaos/chaos-exporter?branch=master)](https://bettercodehub.com/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/litmuschaos/chaos-exporter)](https://goreportcard.com/report/github.com/litmuschaos/chaos-exporter)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter?ref=badge_shield)
+[![YouTube Channel](https://img.shields.io/badge/YouTube-Subscribe-red)](https://www.youtube.com/channel/UCa57PMqmz_j0wnteRa9nCaw)
+<br><br>
 
 - This is a custom Prometheus and CloudWatch exporter to expose Litmus Chaos metrics. 
   To learn more about Litmus Chaos Experiments & the Litmus Chaos Operator, 
@@ -13,14 +25,255 @@
 - Two types of metrics are exposed: 
 
   - AggregateMetrics: These metrics are derived from the all the chaosresults present inside `WATCH_NAMESPACE`. If `WATCH_NAMESPACE` is not defined then it derived metrics from all namespaces. It exposes total_passed_experiment, total_failed_experiment, total_awaited_experiment, experiment_run_count, experiment_installed_count metrices.
+<<<<<<< HEAD
+=======
 
-  - ExperimentScoped: Individual experiment run status. It exposes passed_experiment, failed_experiment, awaited_experiment, probe_success_percentage, startTime, endTime, totalDuration, chaosInjectTime metrices.
+  - ExperimentScoped: Individual experiment run status. It exposes passed_experiment, failed_experiment, awaited_experiment, result_verdict,probe_success_percentage, startTime, endTime, totalDuration, chaosInjectTime metrices.
 
 ### ExperimentScoped Metrics
 
 <table>
 <tr>
   <th>Metrics Name</th>
+  <td><code>litmuschaos_passed_experiments</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains total number of passed experiments</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td>ChaosResult</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_passed_experiments{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 1</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_passed_experiments</code> contains the cumulative sum of passed runs for the given ChaosResult.</td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_failed_experiments</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains total number of failed experiments</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td>ChaosResult</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_failed_experiments{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 0</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_failed_experiments</code> contains the cumulative sum of failed runs for the given ChaosResult.</td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_awaited_experiments</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains total number of awaited experiments</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td>ChaosResult</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_awaited_experiments{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 1</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_awaited_experiments</code> denotes the queued experiments for each ChaosResult. It contains the value as 1 if the ChaosResult's verdict is Awaited otherwise it's value is 0.</td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_probe_success_percentage</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains the ProbeSuccessPercentage for the experiment</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td>ChaosResult</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_probe_success_percentage{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 100</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_probe_success_percentage</code> defines the percentage of passed probes out of total probes defined inside the ChaosEngine.</td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_experiment_start_time</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains the start time of the experiment</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td><code>ExperimentDependencyCheck</code> event inside the ChaosEngine</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_experiment_start_time{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 1.618425155e+09</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_experiment_start_time</code> denotes the start time of the experiment, which calculated based on the ExperimentDependencyCheck event(created by the chaos-runner just before launching experiment pod).</td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_experiment_end_time</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains the end time of the experiment</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td><code>Summary</code> event inside the ChaosEngine</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_experiment_end_time{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 1.618425219e+09</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_experiment_end_time</code> denotes the end time of the experiment, which calculated based on the Summary event(created by experiment pod in the end of experiment).</td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_experiment_chaos_injected_time</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains the chaos injection time of the experiment</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td><code>ChaosInject</code> event inside the ChaosEngine</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_experiment_chaos_injected_time{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 1.618425199e+09</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_experiment_chaos_injected_time</code> defines the time duration when chaos is actually injected, which calculated based on the ChaosInject event(created by the experiment/helper pod just before chaos injection).</td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_experiment_total_duration</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains the total chaos duration of the experiment</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td>It is time difference b/w startTime and endTime</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_experiment_total_duration{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 64</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_experiment_total_duration</code> defines the total chaos duration of the experiment. It is time interval betweeen start time and the end time.</td>
+</tr>
+</table>
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_experiment_verdict</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains the experiment verdict details</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td>ChaosResult</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_experiment_verdict{app_kind="deployment",app_label="run=nginx",app_namespace="nginx",chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus",chaosresult_verdict="Pass",probe_success_percentage="100.000000"} 1</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_experiment_verdict</code> sets the metrics based on the ChaosResult verdict. In case of Awaited verdict it always set to 0. In case of other verdicts it contains value as 1. But if the verdict is repeated more than TSDB_SCRAPE_INTERVAL(passed as ENV) then it will set to 0 until verdict change to a different value.</td>
+</tr>
+</table>
+<hr>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
+
+### NamespacedScoped Metrics
+
+<<<<<<< HEAD
+### ExperimentScoped Metrics
+=======
+<table>
+<tr>
+  <th>Metrics Name</th>
+  <td><code>litmuschaos_namespace_scoped_passed_experiments</code></td>
+</tr>
+<tr>
+  <th>Description</th>
+  <td>It contains the total passed experiments count in the WATCH_NAMESPACE</td>
+</tr>
+<tr>
+  <th>Source</th>
+  <td>Aggregated sum of all the <code>litmuschaos_passed_experiments</code> metrics derived from the ChaosResult present inside WATCH_NAMESPACE</td>
+</tr>
+<tr>
+  <th>Sample Metrics</th>
+  <td><code>litmuschaos_namespace_scoped_passed_experiments 2</code></td>
+</tr>
+<tr>
+  <th>Notes</th>
+  <td>The <code>litmuschaos_namespace_scoped_passed_experiments</code> defines the total number of passed experiments in the WATCH_NAMESPACE. It is the summation of <code>litmuschaos_passed_experiments</code> metrics for every ChaosResult present inside the WATCH_NAMESPACE.</td>
+</tr>
+</table>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
+
+<table>
+<tr>
+  <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_passed_experiments</code></td>
 </tr>
 <tr>
@@ -232,6 +485,9 @@
 <tr>
   <th>Metrics Name</th>
   <td><code>litmuschaos_namespace_scoped_failed_experiments"</code></td>
+=======
+  <td><code>litmuschaos_namespace_scoped_failed_experiments</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -254,7 +510,11 @@
 <table>
 <tr>
   <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_namespace_scoped_awaited_experiments"</code></td>
+=======
+  <td><code>litmuschaos_namespace_scoped_awaited_experiments</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -277,7 +537,11 @@
 <table>
 <tr>
   <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_namespace_scoped_experiments_run_count"</code></td>
+=======
+  <td><code>litmuschaos_namespace_scoped_experiments_run_count</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -300,7 +564,11 @@
 <table>
 <tr>
   <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_namespace_scoped_experiments_installed_count"</code></td>
+=======
+  <td><code>litmuschaos_namespace_scoped_experiments_installed_count</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -326,7 +594,11 @@
 <table>
 <tr>
   <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_cluster_scoped_passed_experiments"</code></td>
+=======
+  <td><code>litmuschaos_cluster_scoped_passed_experiments</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -349,7 +621,11 @@
 <table>
 <tr>
   <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_cluster_scoped_failed_experiments"</code></td>
+=======
+  <td><code>litmuschaos_cluster_scoped_failed_experiments</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -372,7 +648,11 @@
 <table>
 <tr>
   <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_cluster_scoped_awaited_experiments"</code></td>
+=======
+  <td><code>litmuschaos_cluster_scoped_awaited_experiments</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -395,7 +675,11 @@
 <table>
 <tr>
   <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_cluster_scoped_experiments_run_count"</code></td>
+=======
+  <td><code>litmuschaos_cluster_scoped_experiments_run_count</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -418,7 +702,11 @@
 <table>
 <tr>
   <th>Metrics Name</th>
+<<<<<<< HEAD
   <td><code>litmuschaos_cluster_scoped_experiments_installed_count"</code></td>
+=======
+  <td><code>litmuschaos_cluster_scoped_experiments_installed_count</code></td>
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
 </tr>
 <tr>
   <th>Description</th>
@@ -442,9 +730,13 @@
 
 ### Running Litmus Chaos Experiments in order to generate metrics
 
+<<<<<<< HEAD
 - Follow the steps described [here](https://docs.litmuschaos.io/docs/getstarted/) 
   to start running litmus chaos experiments ans storing chaos results. The chaos custom resources are used by the 
   exporter to generate metrics. 
+=======
+- Follow the steps described [here](https://v1-docs.litmuschaos.io/docs/getstarted/) to run litmus chaos experiments which stores the chaos results. The chaos custom resources(chaosresult and chaosengine) are used by the exporter to generate metrics. 
+>>>>>>> 2666e902f6be549323615ea02f9039dab3c4f62d
   
 ### Running Chaos Exporter on the local Machine 
 
@@ -502,6 +794,11 @@ litmuschaos_passed_experiments{chaosengine_context="test",chaosengine_name="hell
 litmuschaos_probe_success_percentage{chaosengine_context="test",chaosengine_name="helloservice-pod-delete",chaosresult_name="helloservice-pod-delete-pod-delete",chaosresult_namespace="litmus"} 100
 ```
 
+## How do I contribute?
+
+You can contribute by raising issues, improving the documentation, contributing to the core framework and tooling, etc.
+
+Head over to the [Contribution guide](CONTRIBUTING.md)
 
 ## License
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Flitmuschaos%2Fchaos-exporter?ref=badge_large)
