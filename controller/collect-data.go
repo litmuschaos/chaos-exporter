@@ -86,7 +86,10 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 
 	// skipping exporting metrics for the chaos-engines, which are in completed state
 	if engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted {
-		return true, nil
+		result, ok := matchVerdict[string(resultDetails.UID)]
+		if !ok || (ok && result.Verdict == resultDetails.Verdict) {
+			return true, nil
+		}
 	}
 
 	return false, nil
