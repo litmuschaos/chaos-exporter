@@ -84,9 +84,13 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		setVerdictCount(verdict, chaosResult).
 		setResultData()
 
-	// skipping exporting metrics for the chaos-engines, which are in completed state
+	// it won't export/override the metrics if chaosengine is in completed state and
+	// experiment's final verdict[passed,failed,stopped] is already exported/overridden
 	if engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted {
-		return true, nil
+		result, ok := matchVerdict[string(resultDetails.UID)]
+		if !ok || (ok && result.Verdict == resultDetails.Verdict) {
+			return true, nil
+		}
 	}
 
 	return false, nil
