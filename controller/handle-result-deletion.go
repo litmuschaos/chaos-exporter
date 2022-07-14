@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 )
 
 // unsetDeletedChaosResults unset the metrics correspond to deleted chaosresults
