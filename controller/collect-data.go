@@ -1,14 +1,15 @@
 package controller
 
 import (
+	"context"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
-	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,7 +19,7 @@ import (
 // GetResultList return the result list correspond to the monitoring enabled chaosengine
 func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
 
-	chaosResultList, err := clients.LitmusClient.ChaosResults(chaosNamespace).List(metav1.ListOptions{})
+	chaosResultList, err := clients.LitmusClient.ChaosResults(chaosNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return litmuschaosv1alpha1.ChaosResultList{}, err
 	}
@@ -48,7 +49,7 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		return false, err
 	}
 
-	engine, err := clients.LitmusClient.ChaosEngines(chaosResult.Namespace).Get(chaosResult.Spec.EngineName, metav1.GetOptions{})
+	engine, err := clients.LitmusClient.ChaosEngines(chaosResult.Namespace).Get(context.Background(), chaosResult.Spec.EngineName, metav1.GetOptions{})
 	if err != nil {
 		// k8serrors.IsNotFound(err) checking k8s resource is found or not,
 		// It will skip this result if k8s resource is not found.
@@ -250,7 +251,7 @@ func getProbeSuccessPercentage(chaosResult *litmuschaosv1alpha1.ChaosResult) (fl
 // getEventsForSpecificInvolvedResource derive all the events correspond to the specific resource
 func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceUID clientTypes.UID, chaosNamespace string) (corev1.EventList, error) {
 	finalEventList := corev1.EventList{}
-	eventsList, err := clients.KubeClient.CoreV1().Events(chaosNamespace).List(metav1.ListOptions{})
+	eventsList, err := clients.KubeClient.CoreV1().Events(chaosNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return corev1.EventList{}, err
 	}

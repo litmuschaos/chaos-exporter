@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -26,7 +27,7 @@ import (
 	"testing"
 	"time"
 
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
 	"github.com/pkg/errors"
 
@@ -82,7 +83,7 @@ var _ = BeforeSuite(func() {
 		Times(uint(180 / 2)).
 		Wait(time.Duration(2) * time.Second).
 		Try(func(attempt uint) error {
-			podSpec, err := client.KubeClient.CoreV1().Pods("litmus").List(metav1.ListOptions{LabelSelector: "name=chaos-operator"})
+			podSpec, err := client.KubeClient.CoreV1().Pods("litmus").List(context.Background(), metav1.ListOptions{LabelSelector: "name=chaos-operator"})
 			if err != nil || len(podSpec.Items) == 0 {
 				return errors.Errorf("unable to list chaos-operator, err: %v", err)
 			}
@@ -150,7 +151,7 @@ var _ = BeforeSuite(func() {
 			},
 		},
 	}
-	_, err = client.KubeClient.AppsV1().Deployments("litmus").Create(deployment)
+	_, err = client.KubeClient.AppsV1().Deployments("litmus").Create(context.Background(), deployment, metav1.CreateOptions{})
 	Expect(err).To(
 		BeNil(),
 		"while creating nginx deployment in namespace litmus",
@@ -199,7 +200,7 @@ var _ = BeforeSuite(func() {
 		},
 	}
 
-	_, err = client.LitmusClient.ChaosEngines("litmus").Create(chaosEngine)
+	_, err = client.LitmusClient.ChaosEngines("litmus").Create(context.Background(), chaosEngine, metav1.CreateOptions{})
 	Expect(err).To(
 		BeNil(),
 		"while building ChaosEngine engine-nginx in namespace litmus",
@@ -217,7 +218,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				Times(uint(180 / 2)).
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
-					pod, err := client.KubeClient.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					pod, err := client.KubeClient.CoreV1().Pods("litmus").Get(context.Background(), "engine-nginx-runner", metav1.GetOptions{})
 					if err != nil {
 						return errors.Errorf("unable to get chaos-runner pod, err: %v", err)
 					}
