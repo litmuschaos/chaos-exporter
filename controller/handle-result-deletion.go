@@ -33,7 +33,8 @@ func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newC
 					setAppKind(value.AppKind).
 					setChaosEngineName(oldResult.Spec.EngineName).
 					setChaosEngineContext(value.ChaosEngineContext).
-					setWorkflowName(value.WorkFlowName)
+					setWorkflowName(value.WorkFlowName).
+					setFaultName(value.FaultName)
 
 				gaugeMetrics.unsetResultChaosMetrics(resultDetails)
 			}
@@ -57,7 +58,7 @@ func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResult
 		case result.Verdict != resultDetails.Verdict:
 			gaugeMetrics.ResultVerdict.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName,
 				resultDetails.ChaosEngineContext, result.Verdict, fmt.Sprintf("%f", result.ProbeSuccessPercentage), resultDetails.AppLabel,
-				resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName)
+				resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, result.FaultName)
 			result.Count = 1
 		default:
 			// if time passed scrape time then reset the value to 0
@@ -101,6 +102,7 @@ func (resultDetails *ChaosResultDetails) setResultData() {
 		setNs(resultDetails.AppNs).
 		setAppLabel(resultDetails.AppLabel).
 		setVerdict(resultDetails.Verdict).
+		setFaultName(resultDetails.FaultName).
 		setCount(0).
 		setProbeSuccesPercentage(resultDetails.ProbeSuccessPercentage)
 
@@ -149,6 +151,12 @@ func (resultData *ResultData) setAppLabel(appLabel string) *ResultData {
 // setVerdict sets the verdict inside resultData struct
 func (resultData *ResultData) setVerdict(verdict string) *ResultData {
 	resultData.Verdict = verdict
+	return resultData
+}
+
+// setFaultName sets the fault name inside resultData struct
+func (resultData *ResultData) setFaultName(fault string) *ResultData {
+	resultData.FaultName = fault
 	return resultData
 }
 
