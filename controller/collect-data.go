@@ -69,14 +69,13 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 	resultDetails.setName(chaosResult.Name).
 		setUID(chaosResult.UID).
 		setNamespace(chaosResult.Namespace).
-		setProbeSuccesPercentage(probeSuccesPercentage).
+		setProbeSuccessPercentage(probeSuccesPercentage).
 		setVerdict(string(chaosResult.Status.ExperimentStatus.Verdict)).
 		setStartTime(events).
 		setEndTime(events).
 		setChaosInjectTime(events).
 		setChaosEngineName(chaosResult.Spec.EngineName).
 		setChaosEngineContext(engine.Labels[EngineContext]).
-		setChaosInjectLabel().
 		setWorkflowName(engine.Labels[WorkFlowName]).
 		setAppLabel(engine.Spec.Appinfo.Applabel).
 		setAppNs(engine.Spec.Appinfo.Appns).
@@ -140,9 +139,9 @@ func (resultDetails *ChaosResultDetails) setVerdictCount(verdict string, chaosRe
 	return resultDetails
 }
 
-// setProbeSuccesPercentage sets ProbeSuccesPercentage inside resultDetails struct
-func (resultDetails *ChaosResultDetails) setProbeSuccesPercentage(probeSuccesPercentage float64) *ChaosResultDetails {
-	resultDetails.ProbeSuccesPercentage = probeSuccesPercentage
+// setProbeSuccessPercentage sets ProbeSuccessPercentage inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setProbeSuccessPercentage(probeSuccessPercentage float64) *ChaosResultDetails {
+	resultDetails.ProbeSuccessPercentage = probeSuccessPercentage
 	return resultDetails
 }
 
@@ -179,17 +178,6 @@ func (resultDetails *ChaosResultDetails) setChaosEngineContext(engineLabel strin
 // setWorkflowName sets the workflow name inside resultDetails struct
 func (resultDetails *ChaosResultDetails) setWorkflowName(workflowName string) *ChaosResultDetails {
 	resultDetails.WorkflowName = workflowName
-	return resultDetails
-}
-
-// setChaosInjectLabel sets the chaos inject label inside resultDetails struct
-func (resultDetails *ChaosResultDetails) setChaosInjectLabel() *ChaosResultDetails {
-	injectTime := ""
-	if resultDetails.InjectionTime != 0 {
-		injectTime = strconv.Itoa(int(resultDetails.InjectionTime))
-	}
-	resultDetails.ChaosInjectLabel = injectTime
-
 	return resultDetails
 }
 
