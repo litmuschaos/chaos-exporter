@@ -321,6 +321,8 @@ github.com/go-lintpack/lintpack v0.5.2/go.mod h1:NwZuYi2nUHho8XEIZ6SIxihrnPoqBTD
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
+github.com/go-logr/logr v0.1.0/go.mod h1:ixOQHD9gLJUVQQ2ZOR7zLEifBX6tGkNJF4QyIY7sIas=
+github.com/go-logr/logr v0.2.0/go.mod h1:z6/tIYblkpsD+a4lm/fGIIU9mZ+XfAiaFtq7xTgseGU=
 github.com/go-logr/logr v0.4.0 h1:K7/B1jt6fIBQVd4Owv2MqGQClcgf0R266+7C/QjRcLc=
 github.com/go-logr/logr v0.4.0/go.mod h1:z6/tIYblkpsD+a4lm/fGIIU9mZ+XfAiaFtq7xTgseGU=
 github.com/go-logr/zapr v0.1.0/go.mod h1:tabnROwaDl0UNxkVeFRbY8bwB37GwRv0P8lg6aAiEnk=
@@ -669,8 +671,8 @@ github.com/libopenstorage/openstorage v1.0.0/go.mod h1:Sp1sIObHjat1BeXhfMqLZ14wn
 github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de/go.mod h1:zAbeS9B/r2mtpb6U+EI2rYA5OAXxsYw6wTamcNW+zcE=
 github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
 github.com/litmuschaos/chaos-operator v0.0.0-20210610071657-a58dbd939e73/go.mod h1:QMjfAVIfwcpj/P1jikyz5+C5vWICiUXsFZMR7Ihnzro=
-github.com/litmuschaos/chaos-operator v0.0.0-20230109130222-de7c74a937a9 h1:5VkAw2Zqf6xXEElnmFTVuNiP+YVZqH2Qr2t/yv6eI5g=
-github.com/litmuschaos/chaos-operator v0.0.0-20230109130222-de7c74a937a9/go.mod h1:jRA6jKGed6ytLDJ7897yr2Kr2ygg+cuRXJqwvNmE4Bw=
+github.com/litmuschaos/chaos-operator v0.0.0-20230309154531-e7f9ae680a0e h1:gASOicfFwyiRuS8UDrPv9FrjzaRIh7byN4fTGm9DJ38=
+github.com/litmuschaos/chaos-operator v0.0.0-20230309154531-e7f9ae680a0e/go.mod h1:jRA6jKGed6ytLDJ7897yr2Kr2ygg+cuRXJqwvNmE4Bw=
 github.com/litmuschaos/elves v0.0.0-20201107015738-552d74669e3c/go.mod h1:DsbHGNUq/78NZozWVVI9Q6eBei4I+JjlkkD5aibJ3MQ=
 github.com/litmuschaos/litmus-go v0.0.0-20210705063441-babf0c4aa57d h1:QCIy9qxYtAQ6XoI5o935yKbulaVswl6X5lGQire2bwQ=
 github.com/litmuschaos/litmus-go v0.0.0-20210705063441-babf0c4aa57d/go.mod h1:MNO+1u4jBPjLtFO56bckIv87EhwTkppJxDf8+6PbLRY=

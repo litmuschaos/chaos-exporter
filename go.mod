@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/aws/aws-sdk-go v1.38.59
-	github.com/litmuschaos/chaos-operator v0.0.0-20230109130222-de7c74a937a9
+	github.com/litmuschaos/chaos-operator v0.0.0-20230309154531-e7f9ae680a0e
 	github.com/litmuschaos/litmus-go v0.0.0-20210705063441-babf0c4aa57d
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.15.0

@@ -82,6 +82,7 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		setAppKind(engine.Spec.Appinfo.AppKind).
 		setTotalDuration().
 		setVerdictCount(verdict, chaosResult).
+		setFaultName(engine.Spec.Experiments[0].Name).
 		setResultData()
 
 	// it won't export/override the metrics if chaosengine is in completed state and
@@ -178,6 +179,12 @@ func (resultDetails *ChaosResultDetails) setChaosEngineContext(engineLabel strin
 // setWorkflowName sets the workflow name inside resultDetails struct
 func (resultDetails *ChaosResultDetails) setWorkflowName(workflowName string) *ChaosResultDetails {
 	resultDetails.WorkflowName = workflowName
+	return resultDetails
+}
+
+// setFaultName sets the fault name inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setFaultName(faultName string) *ChaosResultDetails {
+	resultDetails.FaultName = faultName
 	return resultDetails
 }
 
