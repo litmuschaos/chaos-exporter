@@ -1,6 +1,6 @@
 module github.com/litmuschaos/chaos-exporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/aws/aws-sdk-go v1.38.59
@@ -92,3 +92,5 @@ replace (
 )
 
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
+
+replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible
