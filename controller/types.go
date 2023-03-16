@@ -23,19 +23,17 @@ import (
 
 //EngineLabelKey is key for ChaosEngineLabel
 var (
-	EngineContext       = "context"
-	WorkFlowName        = "workflow_name"
-	resultStore         = map[string][]ResultData{}
-	matchVerdict        = map[string]*ResultData{}
-	injectionTimeFilter = "enable"
+	EngineContext = "context"
+	WorkFlowName  = "workflow_name"
+	resultStore   = map[string][]ResultData{}
+	matchVerdict  = map[string]*ResultData{}
 )
 
 // ResultData contains attributes to store metrics parameters
-// which can be used while handaling chaosresult deletion
+// which can be used while handling chaosresult deletion
 type ResultData struct {
 	ChaosEngineContext     string
 	WorkFlowName           string
-	ChaosInjectLabel       string
 	AppKind                string
 	AppNs                  string
 	AppLabel               string
@@ -46,25 +44,24 @@ type ResultData struct {
 
 // ChaosResultDetails contains chaosresult details
 type ChaosResultDetails struct {
-	Name                  string
-	UID                   clientTypes.UID
-	Namespace             string
-	AppKind               string
-	AppNs                 string
-	AppLabel              string
-	PassedExperiments     float64
-	FailedExperiments     float64
-	AwaitedExperiments    float64
-	ProbeSuccesPercentage float64
-	StartTime             float64
-	EndTime               float64
-	InjectionTime         int64
-	TotalDuration         float64
-	ChaosEngineName       string
-	ChaosEngineContext    string
-	Verdict               string
-	WorkflowName          string
-	ChaosInjectLabel      string
+	Name                   string
+	UID                    clientTypes.UID
+	Namespace              string
+	AppKind                string
+	AppNs                  string
+	AppLabel               string
+	PassedExperiments      float64
+	FailedExperiments      float64
+	AwaitedExperiments     float64
+	ProbeSuccessPercentage float64
+	StartTime              float64
+	EndTime                float64
+	InjectionTime          int64
+	TotalDuration          float64
+	ChaosEngineName        string
+	ChaosEngineContext     string
+	Verdict                string
+	WorkflowName           string
 }
 
 // NamespacedScopeMetrics contains metrics for the chaos namespace
@@ -109,15 +106,6 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 		Name:      "awaited_experiments",
 		Help:      "Total number of awaited experiments",
 	},
-		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context", "workflow_name", "chaos_injection_time"},
-	)
-
-	gaugeMetrics.ResultAwaitedExperimentsWithoutInjectionTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: "litmuschaos",
-		Subsystem: "",
-		Name:      "awaited_experiments",
-		Help:      "Total number of awaited experiments",
-	},
 		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context", "workflow_name"},
 	)
 
@@ -125,7 +113,7 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 		Namespace: "litmuschaos",
 		Subsystem: "",
 		Name:      "probe_success_percentage",
-		Help:      "ProbeSuccesPercentage for the experiments",
+		Help:      "ProbeSuccessPercentage for the experiments",
 	},
 		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context"},
 	)
@@ -137,7 +125,7 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 		Help:      "Verdict of the experiments",
 	},
 		[]string{"chaosresult_namespace", "chaosresult_name", "chaosengine_name", "chaosengine_context", "chaosresult_verdict",
-			"probe_success_percentage", "app_label", "app_namespace", "app_kind", "workflow_name", "chaos_injection_time"},
+			"probe_success_percentage", "app_label", "app_namespace", "app_kind", "workflow_name"},
 	)
 
 	gaugeMetrics.ExperimentStartTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -270,26 +258,25 @@ func (gaugeMetrics *GaugeMetrics) InitializeGaugeMetrics() *GaugeMetrics {
 
 // GaugeMetrics contains all the metrics definition
 type GaugeMetrics struct {
-	ResultPassedExperiments                      *prometheus.GaugeVec
-	ResultFailedExperiments                      *prometheus.GaugeVec
-	ResultAwaitedExperiments                     *prometheus.GaugeVec
-	ResultAwaitedExperimentsWithoutInjectionTime *prometheus.GaugeVec
-	ResultProbeSuccessPercentage                 *prometheus.GaugeVec
-	ResultVerdict                                *prometheus.GaugeVec
-	ExperimentStartTime                          *prometheus.GaugeVec
-	ExperimentEndTime                            *prometheus.GaugeVec
-	ExperimentTotalDuration                      *prometheus.GaugeVec
-	ExperimentChaosInjectedTime                  *prometheus.GaugeVec
-	NamespaceScopedTotalPassedExperiments        *prometheus.GaugeVec
-	NamespaceScopedTotalFailedExperiments        *prometheus.GaugeVec
-	NamespaceScopedTotalAwaitedExperiments       *prometheus.GaugeVec
-	NamespaceScopedExperimentsInstalledCount     *prometheus.GaugeVec
-	NamespaceScopedExperimentsRunCount           *prometheus.GaugeVec
-	ClusterScopedTotalPassedExperiments          *prometheus.GaugeVec
-	ClusterScopedTotalFailedExperiments          *prometheus.GaugeVec
-	ClusterScopedTotalAwaitedExperiments         *prometheus.GaugeVec
-	ClusterScopedExperimentsInstalledCount       *prometheus.GaugeVec
-	ClusterScopedExperimentsRunCount             *prometheus.GaugeVec
+	ResultPassedExperiments                  *prometheus.GaugeVec
+	ResultFailedExperiments                  *prometheus.GaugeVec
+	ResultAwaitedExperiments                 *prometheus.GaugeVec
+	ResultProbeSuccessPercentage             *prometheus.GaugeVec
+	ResultVerdict                            *prometheus.GaugeVec
+	ExperimentStartTime                      *prometheus.GaugeVec
+	ExperimentEndTime                        *prometheus.GaugeVec
+	ExperimentTotalDuration                  *prometheus.GaugeVec
+	ExperimentChaosInjectedTime              *prometheus.GaugeVec
+	NamespaceScopedTotalPassedExperiments    *prometheus.GaugeVec
+	NamespaceScopedTotalFailedExperiments    *prometheus.GaugeVec
+	NamespaceScopedTotalAwaitedExperiments   *prometheus.GaugeVec
+	NamespaceScopedExperimentsInstalledCount *prometheus.GaugeVec
+	NamespaceScopedExperimentsRunCount       *prometheus.GaugeVec
+	ClusterScopedTotalPassedExperiments      *prometheus.GaugeVec
+	ClusterScopedTotalFailedExperiments      *prometheus.GaugeVec
+	ClusterScopedTotalAwaitedExperiments     *prometheus.GaugeVec
+	ClusterScopedExperimentsInstalledCount   *prometheus.GaugeVec
+	ClusterScopedExperimentsRunCount         *prometheus.GaugeVec
 }
 
 //MonitoringEnabled contains existence/availability of chaosEngines and chaosResults

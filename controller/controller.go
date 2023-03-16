@@ -17,8 +17,6 @@ limitations under the License.
 package controller
 
 import (
-	"os"
-	"strings"
 	"time"
 
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
@@ -54,16 +52,9 @@ func Exporter(clients clients.ClientSets) {
 
 // RegisterFixedMetrics register the prometheus metrics
 func (gaugeMetrics *GaugeMetrics) RegisterFixedMetrics() {
-	if os.Getenv("INJECTION_TIME_FILTER") != "" {
-		injectionTimeFilter = os.Getenv("INJECTION_TIME_FILTER")
-	}
 	prometheus.MustRegister(gaugeMetrics.ResultPassedExperiments)
 	prometheus.MustRegister(gaugeMetrics.ResultFailedExperiments)
-	if strings.ToLower(injectionTimeFilter) == "disable" {
-		prometheus.MustRegister(gaugeMetrics.ResultAwaitedExperimentsWithoutInjectionTime)
-	} else {
-		prometheus.MustRegister(gaugeMetrics.ResultAwaitedExperiments)
-	}
+	prometheus.MustRegister(gaugeMetrics.ResultAwaitedExperiments)
 	prometheus.MustRegister(gaugeMetrics.ResultProbeSuccessPercentage)
 	prometheus.MustRegister(gaugeMetrics.ResultVerdict)
 	prometheus.MustRegister(gaugeMetrics.ExperimentStartTime)
