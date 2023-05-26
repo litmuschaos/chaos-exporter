@@ -93,7 +93,7 @@ func getEnv(key, defaultValue string) string {
 }
 
 // setResultData sets the result data into resultStore so that the data
-//can be used while handling chaosresult deletion
+// can be used while handling chaosresult deletion
 func (resultDetails *ChaosResultDetails) setResultData() {
 	resultData := initialiseResultData().
 		setContext(resultDetails.ChaosEngineContext).

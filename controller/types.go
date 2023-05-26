@@ -21,7 +21,7 @@ import (
 	clientTypes "k8s.io/apimachinery/pkg/types"
 )
 
-//EngineLabelKey is key for ChaosEngineLabel
+// EngineLabelKey is key for ChaosEngineLabel
 var (
 	EngineContext = "context"
 	WorkFlowName  = "workflow_name"
@@ -281,7 +281,7 @@ type GaugeMetrics struct {
 	ClusterScopedExperimentsRunCount         *prometheus.GaugeVec
 }
 
-//MonitoringEnabled contains existence/availability of chaosEngines and chaosResults
+// MonitoringEnabled contains existence/availability of chaosEngines and chaosResults
 type MonitoringEnabled struct {
 	IsChaosResultsAvailable bool
 	IsChaosEnginesAvailable bool
