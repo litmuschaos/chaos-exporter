@@ -12,7 +12,7 @@ import (
 
 // ClientSets is a collection of clientSets and kubeConfig needed
 type ClientSets struct {
-	KubeClient   *kubernetes.Clientset
+	KubeClient   kubernetes.Interface
 	LitmusClient *chaosClient.LitmuschaosV1alpha1Client
 	KubeConfig   *rest.Config
 }
