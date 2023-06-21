@@ -19,7 +19,7 @@ import (
 // GetResultList return the result list correspond to the monitoring enabled chaosengine
 func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
 
-	chaosResultList, err := clients.LitmusClient.ChaosResults(chaosNamespace).List(context.Background(), metav1.ListOptions{})
+	chaosResultList, err := clients.LitmusClient.LitmuschaosV1alpha1().ChaosResults(chaosNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return litmuschaosv1alpha1.ChaosResultList{}, err
 	}
@@ -49,7 +49,7 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 		return false, err
 	}
 
-	engine, err := clients.LitmusClient.ChaosEngines(chaosResult.Namespace).Get(context.Background(), chaosResult.Spec.EngineName, metav1.GetOptions{})
+	engine, err := clients.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(chaosResult.Namespace).Get(context.Background(), chaosResult.Spec.EngineName, metav1.GetOptions{})
 	if err != nil {
 		// k8serrors.IsNotFound(err) checking k8s resource is found or not,
 		// It will skip this result if k8s resource is not found.

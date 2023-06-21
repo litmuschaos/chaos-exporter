@@ -31,7 +31,7 @@ import (
 	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
 	"github.com/pkg/errors"
 
-	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
+	clientv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
@@ -72,7 +72,7 @@ var _ = BeforeSuite(func() {
 	client.KubeClient, err = kubernetes.NewForConfig(config)
 	Expect(err).To(BeNil(), "failed to generate k8sClientSet")
 
-	client.LitmusClient, err = chaosClient.NewForConfig(config)
+	client.LitmusClient, err = clientv1alpha1.NewForConfig(config)
 	Expect(err).To(BeNil(), "failed to generate litmusClientSet")
 
 	By("Installing Litmus")
@@ -200,7 +200,7 @@ var _ = BeforeSuite(func() {
 		},
 	}
 
-	_, err = client.LitmusClient.ChaosEngines("litmus").Create(context.Background(), chaosEngine, metav1.CreateOptions{})
+	_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines("litmus").Create(context.Background(), chaosEngine, metav1.CreateOptions{})
 	Expect(err).To(
 		BeNil(),
 		"while building ChaosEngine engine-nginx in namespace litmus",
