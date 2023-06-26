@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	litmusFakeClientSet "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/fake"
@@ -18,44 +17,36 @@ func TestGetResultList(t *testing.T) {
 	FakeEngineName := "Fake Engine"
 
 	tests := map[string]struct {
-		instance        *v1alpha1.ChaosEngine
-		isErr           bool
-		chaosengine     *v1alpha1.ChaosEngine
-		chaosresultlist *v1alpha1.ChaosResultList
-		monitoring      *MonitoringEnabled
+		chaosresult *v1alpha1.ChaosResult
+		monitoring  *MonitoringEnabled
+		isErr       bool
 	}{
 		"Test Positive-1": {
-			chaosengine: &v1alpha1.ChaosEngine{
+			chaosresult: &v1alpha1.ChaosResult{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      FakeEngineName,
 					Namespace: FakeChaosNameSpace,
 				},
-				Spec: v1alpha1.ChaosEngineSpec{
-					Appinfo: v1alpha1.ApplicationParams{
-						Applabel: "app=nginx",
-						AppKind:  "deployment",
-					},
-					EngineState: v1alpha1.EngineStateActive,
-					Components: v1alpha1.ComponentParams{
-						Runner: v1alpha1.RunnerInfo{
-							Image: "fake-runner-image",
-						},
-					},
-					Experiments: []v1alpha1.ExperimentList{
-						{
-							Name: "exp-1",
-						},
-					},
-				},
-				Status: v1alpha1.ChaosEngineStatus{
-					EngineStatus: v1alpha1.EngineStatusCompleted,
+				Spec: v1alpha1.ChaosResultSpec{
+					ExperimentName: "exp-1",
+					EngineName:     FakeEngineName,
 				},
 			},
 			isErr: false,
 			monitoring: &MonitoringEnabled{
 				IsChaosResultsAvailable: true,
-				IsChaosEnginesAvailable: true,
 			},
+		},
+		"Test Negative-1": {
+			chaosresult: &v1alpha1.ChaosResult{},
+			isErr:       true,
+			monitoring: &MonitoringEnabled{
+				IsChaosResultsAvailable: true,
+			},
+		},
+		"Test Negative-2": {
+			isErr:      true,
+			monitoring: &MonitoringEnabled{},
 		},
 	}
 
@@ -63,15 +54,16 @@ func TestGetResultList(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 
 			client := CreateFakeClient(t)
-			_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(FakeChaosNameSpace).Create(context.Background(), mock.chaosengine, metav1.CreateOptions{})
-			if err != nil {
-				t.Fatalf("engine not created for %v test, err: %v", name, err)
+			if !mock.isErr {
+				_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(mock.chaosresult.Namespace).Create(context.Background(), mock.chaosresult, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("chaosresult not created for %v test, err: %v", name, err)
+				}
 			}
-			resultList, err := GetResultList(client, FakeChaosNameSpace, mock.monitoring)
+			_, err = GetResultList(client, FakeChaosNameSpace, mock.monitoring)
 			//if !mock.isErr && err != nil && mock.chaosresultlist != resultList {
 			//	t.Fatalf("test Failed as not able to get the Chaos result list")
 			//}
-			fmt.Print(resultList)
 
 		})
 	}
