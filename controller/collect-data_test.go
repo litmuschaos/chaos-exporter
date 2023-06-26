@@ -67,7 +67,6 @@ func TestGetResultList(t *testing.T) {
 			if err != nil {
 				t.Fatalf("engine not created for %v test, err: %v", name, err)
 			}
-
 			resultList, err := GetResultList(client, FakeChaosNameSpace, mock.monitoring)
 			//if !mock.isErr && err != nil && mock.chaosresultlist != resultList {
 			//	t.Fatalf("test Failed as not able to get the Chaos result list")
@@ -140,29 +139,33 @@ func TestGetExperimentMetricsFromResult(t *testing.T) {
 			},
 			isErr: false,
 		},
+		"Test Negative-1": {
+			chaosresult: &v1alpha1.ChaosResult{},
+			isErr:       true,
+		},
 	}
 
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
 
 			client := CreateFakeClient(t)
-
-			_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.chaosengine.Namespace).Create(context.Background(), mock.chaosengine, metav1.CreateOptions{})
-			if err != nil {
-				t.Fatalf("engine not created for %v test, err: %v", name, err)
-			}
-
-			_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(mock.chaosresult.Namespace).Create(context.Background(), mock.chaosresult, metav1.CreateOptions{})
-			if err != nil {
-				t.Fatalf("chaosresult not created for %v test, err: %v", name, err)
-			}
-
 			resultDetails := &ChaosResultDetails{}
-			_, err = resultDetails.getExperimentMetricsFromResult(mock.chaosresult, client)
+			if !mock.isErr {
+				_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.chaosengine.Namespace).Create(context.Background(), mock.chaosengine, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("engine not created for %v test, err: %v", name, err)
+				}
 
+				_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(mock.chaosresult.Namespace).Create(context.Background(), mock.chaosresult, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("chaosresult not created for %v test, err: %v", name, err)
+				}
+			}
+			_, err = resultDetails.getExperimentMetricsFromResult(mock.chaosresult, client)
 			if !mock.isErr && err != nil {
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
+
 		})
 	}
 }
