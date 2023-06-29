@@ -34,7 +34,7 @@ import (
 var err error
 
 // GetLitmusChaosMetrics derive and send the chaos metrics
-func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList, monitoringEnabled *MonitoringEnabled) error {
+func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList, monitoringEnabled *MonitoringEnabled) error {
 	engineCount := 0
 
 	// initialising the parameters for the namespaced scope metrics
@@ -53,13 +53,12 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	}
 	watchNamespace := os.Getenv("WATCH_NAMESPACE")
 	// Getting list of all the chaosresults for the monitoring
-	resultList, err := GetResultList(clients, watchNamespace, monitoringEnabled)
+	resultList, err := m.ResultCollector.GetResultList(clients, watchNamespace, monitoringEnabled)
 	if err != nil {
 		return err
 	}
-
 	// unset the metrics correspond to deleted chaosresults
-	gaugeMetrics.unsetDeletedChaosResults(overallChaosResults, &resultList)
+	m.GaugeMetrics.unsetDeletedChaosResults(overallChaosResults, &resultList)
 	// updating the overall chaosresults items to latest
 	overallChaosResults.Items = resultList.Items
 
@@ -67,24 +66,25 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	// and aggregate metrics of all results present inside chaos namespace, if chaos namespace is defined
 	// otherwise it derive metrics for all chaosresults present inside cluster
 	for _, chaosresult := range resultList.Items {
-
-		resultDetails := ChaosResultDetails{
-			PassedExperiments:  0,
-			FailedExperiments:  0,
-			AwaitedExperiments: 0,
+		r := ResultDetails{
+			resultDetails: ChaosResultDetails{
+				PassedExperiments:  0,
+				FailedExperiments:  0,
+				AwaitedExperiments: 0,
+			},
 		}
 
 		// deriving metrics data from the chaosresult
-		skip, err := resultDetails.getExperimentMetricsFromResult(&chaosresult, clients)
+		skip, err := m.ResultCollector.GetExperimentMetricsFromResult(&chaosresult, clients)
 		if err != nil {
 			return err
 		}
 		// generating the aggeregate metrics from per chaosresult metric
-		namespacedScopeMetrics.AwaitedExperiments += resultDetails.AwaitedExperiments
-		namespacedScopeMetrics.PassedExperiments += resultDetails.PassedExperiments
-		namespacedScopeMetrics.FailedExperiments += resultDetails.FailedExperiments
+		namespacedScopeMetrics.AwaitedExperiments += r.resultDetails.AwaitedExperiments
+		namespacedScopeMetrics.PassedExperiments += r.resultDetails.PassedExperiments
+		namespacedScopeMetrics.FailedExperiments += r.resultDetails.FailedExperiments
 		namespacedScopeMetrics.ExperimentsInstalledCount++
-		namespacedScopeMetrics.ExperimentRunCount += resultDetails.AwaitedExperiments + resultDetails.PassedExperiments + resultDetails.FailedExperiments
+		namespacedScopeMetrics.ExperimentRunCount += r.resultDetails.AwaitedExperiments + r.resultDetails.PassedExperiments + r.resultDetails.FailedExperiments
 		// skipping exporting metrics for the results, whose chaosengine is either completed or not exist
 		if skip {
 			continue
@@ -95,26 +95,26 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 
 		//DISPLAY THE METRICS INFORMATION
 		log.InfoWithValues("The chaos metrics are as follows", logrus.Fields{
-			"ResultName":             resultDetails.Name,
-			"ResultNamespace":        resultDetails.Namespace,
-			"PassedExperiments":      resultDetails.PassedExperiments,
-			"FailedExperiments":      resultDetails.FailedExperiments,
-			"AwaitedExperiments":     resultDetails.AwaitedExperiments,
-			"ProbeSuccessPercentage": resultDetails.ProbeSuccessPercentage,
-			"StartTime":              resultDetails.StartTime,
-			"EndTime":                resultDetails.EndTime,
-			"ChaosInjectTime":        resultDetails.InjectionTime,
-			"TotalDuration":          resultDetails.TotalDuration,
-			"ResultVerdict":          resultDetails.Verdict,
-			"FaultName":              resultDetails.FaultName,
+			"ResultName":             r.resultDetails.Name,
+			"ResultNamespace":        r.resultDetails.Namespace,
+			"PassedExperiments":      r.resultDetails.PassedExperiments,
+			"FailedExperiments":      r.resultDetails.FailedExperiments,
+			"AwaitedExperiments":     r.resultDetails.AwaitedExperiments,
+			"ProbeSuccessPercentage": r.resultDetails.ProbeSuccessPercentage,
+			"StartTime":              r.resultDetails.StartTime,
+			"EndTime":                r.resultDetails.EndTime,
+			"ChaosInjectTime":        r.resultDetails.InjectionTime,
+			"TotalDuration":          r.resultDetails.TotalDuration,
+			"ResultVerdict":          r.resultDetails.Verdict,
+			"FaultName":              r.resultDetails.FaultName,
 		})
 
 		// setting chaosresult metrics for the given chaosresult
-		verdictValue := gaugeMetrics.unsetOutdatedMetrics(resultDetails)
-		gaugeMetrics.setResultChaosMetrics(resultDetails, verdictValue)
+		verdictValue := m.GaugeMetrics.unsetOutdatedMetrics(r.resultDetails)
+		m.GaugeMetrics.setResultChaosMetrics(r.resultDetails, verdictValue)
 		// setting chaosresult aws metrics for the given chaosresult, which can be used for cloudwatch
 		if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
-			awsConfig.setAwsResultChaosMetrics(resultDetails)
+			awsConfig.setAwsResultChaosMetrics(r.resultDetails)
 		}
 	}
 	if engineCount == 0 {
@@ -128,7 +128,7 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	}
 
 	//setting aggregate metrics from the all chaosresults
-	gaugeMetrics.setNamespacedChaosMetrics(namespacedScopeMetrics, watchNamespace)
+	m.GaugeMetrics.setNamespacedChaosMetrics(namespacedScopeMetrics, watchNamespace)
 	//setting aggregate aws metrics from the all chaosresults, which can be used for cloudwatch
 	if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
 		awsConfig.setAwsNamespacedChaosMetrics(namespacedScopeMetrics)

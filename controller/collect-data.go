@@ -16,8 +16,19 @@ import (
 	clientTypes "k8s.io/apimachinery/pkg/types"
 )
 
+//go:generate mockgen -destination=mocks/mock_collect-data.go -package=mocks github.com/litmuschaos/chaos-exporter/controller ResultCollector
+
+// ResultCollector interface for the both functions GetResultList and getExperimentMetricsFromResult
+type ResultCollector interface {
+	GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error)
+	GetExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error)
+}
+type ResultDetails struct {
+	resultDetails ChaosResultDetails
+}
+
 // GetResultList return the result list correspond to the monitoring enabled chaosengine
-func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
+func (r *ResultDetails) GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
 
 	chaosResultList, err := clients.LitmusClient.LitmuschaosV1alpha1().ChaosResults(chaosNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
@@ -41,14 +52,13 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoring
 	return *chaosResultList, nil
 }
 
-// getExperimentMetricsFromResult derive all the metrics data from the chaosresult and set into resultDetails struct
-func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error) {
+// GetExperimentMetricsFromResult derive all the metrics data from the chaosresult and set into resultDetails struct
+func (r *ResultDetails) GetExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error) {
 	verdict := strings.ToLower(string(chaosResult.Status.ExperimentStatus.Verdict))
 	probeSuccesPercentage, err := getProbeSuccessPercentage(chaosResult)
 	if err != nil {
 		return false, err
 	}
-
 	engine, err := clients.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(chaosResult.Namespace).Get(context.Background(), chaosResult.Spec.EngineName, metav1.GetOptions{})
 	if err != nil {
 		// k8serrors.IsNotFound(err) checking k8s resource is found or not,
@@ -64,9 +74,8 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 	if err != nil {
 		return false, err
 	}
-
 	// setting all the values inside resultdetails struct
-	resultDetails.setName(chaosResult.Name).
+	r.resultDetails.setName(chaosResult.Name).
 		setUID(chaosResult.UID).
 		setNamespace(chaosResult.Namespace).
 		setProbeSuccessPercentage(probeSuccesPercentage).
@@ -88,8 +97,8 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 	// it won't export/override the metrics if chaosengine is in completed state and
 	// experiment's final verdict[passed,failed,stopped] is already exported/overridden
 	if engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted {
-		result, ok := matchVerdict[string(resultDetails.UID)]
-		if !ok || (ok && result.Verdict == resultDetails.Verdict) {
+		result, ok := matchVerdict[string(r.resultDetails.UID)]
+		if !ok || (ok && result.Verdict == r.resultDetails.Verdict) {
 			return true, nil
 		}
 	}

@@ -31,10 +31,13 @@ func Exporter(clients clients.ClientSets) {
 	// Register the fixed (count) chaos metrics
 	log.Info("Registering Fixed Metrics")
 
-	gaugeMetrics := GaugeMetrics{}
+	r := MetricesCollecter{
+		ResultCollector: &ResultDetails{},
+	}
+	//gaugeMetrics := GaugeMetrics{}
 	overallChaosResults := litmuschaosv1alpha1.ChaosResultList{}
 
-	gaugeMetrics.InitializeGaugeMetrics().
+	r.GaugeMetrics.InitializeGaugeMetrics().
 		RegisterFixedMetrics()
 
 	monitoringEnabled := MonitoringEnabled{
@@ -43,7 +46,7 @@ func Exporter(clients clients.ClientSets) {
 	}
 
 	for {
-		if err := gaugeMetrics.GetLitmusChaosMetrics(clients, &overallChaosResults, &monitoringEnabled); err != nil {
+		if err := r.GetLitmusChaosMetrics(clients, &overallChaosResults, &monitoringEnabled); err != nil {
 			log.Errorf("err: %v", err)
 		}
 		time.Sleep(1000 * time.Millisecond)
