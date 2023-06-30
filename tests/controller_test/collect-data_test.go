@@ -1,7 +1,8 @@
-package controller
+package controller_test
 
 import (
 	"context"
+	"github.com/litmuschaos/chaos-exporter/controller"
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	litmusFakeClientSet "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/fake"
@@ -18,7 +19,7 @@ func TestGetResultList(t *testing.T) {
 
 	tests := map[string]struct {
 		chaosresult *v1alpha1.ChaosResult
-		monitoring  *MonitoringEnabled
+		monitoring  *controller.MonitoringEnabled
 		isErr       bool
 	}{
 		"Test Positive-1": {
@@ -33,37 +34,37 @@ func TestGetResultList(t *testing.T) {
 				},
 			},
 			isErr: false,
-			monitoring: &MonitoringEnabled{
+			monitoring: &controller.MonitoringEnabled{
 				IsChaosResultsAvailable: true,
 			},
 		},
 		"Test Negative-1": {
 			chaosresult: &v1alpha1.ChaosResult{},
 			isErr:       true,
-			monitoring: &MonitoringEnabled{
+			monitoring: &controller.MonitoringEnabled{
 				IsChaosResultsAvailable: true,
 			},
 		},
 		"Test Negative-2": {
 			isErr:      true,
-			monitoring: &MonitoringEnabled{},
+			monitoring: &controller.MonitoringEnabled{},
 		},
 	}
 
 	for name, mock := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			client := CreateFakeClient(t)
 			if !mock.isErr {
-				_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(mock.chaosresult.Namespace).Create(context.Background(), mock.chaosresult, metav1.CreateOptions{})
+				_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(mock.chaosresult.Namespace).Create(context.Background(), mock.chaosresult, metav1.CreateOptions{})
 				if err != nil {
 					t.Fatalf("chaosresult not created for %v test, err: %v", name, err)
 				}
 			}
-			_, err = GetResultList(client, FakeChaosNameSpace, mock.monitoring)
-			//if !mock.isErr && err != nil && mock.chaosresultlist != resultList {
-			//	t.Fatalf("test Failed as not able to get the Chaos result list")
-			//}
+			resultDetails := &controller.ResultDetails{}
+			_, err := resultDetails.GetResultList(client, FakeChaosNameSpace, mock.monitoring)
+			if !mock.isErr && err != nil {
+				t.Fatalf("test Failed as not able to get the Chaos result list")
+			}
 
 		})
 	}
@@ -141,7 +142,7 @@ func TestGetExperimentMetricsFromResult(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 
 			client := CreateFakeClient(t)
-			resultDetails := &ChaosResultDetails{}
+			resultDetails := &controller.ResultDetails{}
 			if !mock.isErr {
 				_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.chaosengine.Namespace).Create(context.Background(), mock.chaosengine, metav1.CreateOptions{})
 				if err != nil {
@@ -153,7 +154,8 @@ func TestGetExperimentMetricsFromResult(t *testing.T) {
 					t.Fatalf("chaosresult not created for %v test, err: %v", name, err)
 				}
 			}
-			_, err = resultDetails.getExperimentMetricsFromResult(mock.chaosresult, client)
+			var err error
+			_, err = resultDetails.GetExperimentMetricsFromResult(mock.chaosresult, client)
 			if !mock.isErr && err != nil {
 				t.Fatalf("Test %q failed: expected error to be nil", name)
 			}
