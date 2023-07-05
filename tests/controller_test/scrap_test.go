@@ -1,13 +1,11 @@
 package controller_test
 
 import (
-	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/litmuschaos/chaos-exporter/controller"
 	"github.com/litmuschaos/chaos-exporter/controller/mocks"
 	v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 	"testing"
 )
 
@@ -18,22 +16,16 @@ func TestGetLitmusChaosMetrics(t *testing.T) {
 
 	//FakeEngineName := "Fake Engine"
 	//FakeNamespace := "Fake Namespace"
-	//fakeServiceAcc := "Fake Service Account"
-	//fakeAppLabel := "Fake Label"
-	//FakeAppName := "Fake App"
-	//FakeClusterName := "Fake Cluster"
 
 	tests := []struct {
 		name               string
 		execFunc           func()
-		chaosengine        *v1alpha1.ChaosEngine
-		chaosresult        *v1alpha1.ChaosResult
 		isErr              bool
 		monitoring         *controller.MonitoringEnabled
 		overallChaosResult *v1alpha1.ChaosResultList
 	}{
 		{
-			name: "Test Positive-1",
+			name: "TestGetLitmusChaosMetrics_Success",
 			execFunc: func() {
 				mockCollectData.EXPECT().GetResultList(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(v1alpha1.ChaosResultList{
@@ -46,11 +38,10 @@ func TestGetLitmusChaosMetrics(t *testing.T) {
 						},
 					}, nil).Times(1)
 				mockCollectData.EXPECT().GetExperimentMetricsFromResult(gomock.Any(), gomock.Any()).Return(false, nil).Times(1)
-
-				os.Setenv("AWS_CLOUDWATCH_METRIC_NAMESPACE", "")
-				os.Setenv("CLUSTER_NAME", "")
-				os.Setenv("APP_NAME", "")
-				os.Setenv("WATCH_NAMESPACE", "")
+				mockCollectData.EXPECT().SetResultDetails()
+				mockCollectData.EXPECT().GetResultDetails().Return(controller.ChaosResultDetails{
+					UID: "FAKE-UID",
+				}).Times(1)
 			},
 			overallChaosResult: &v1alpha1.ChaosResultList{
 				Items: []v1alpha1.ChaosResult{
@@ -75,7 +66,9 @@ func TestGetLitmusChaosMetrics(t *testing.T) {
 
 			r.GaugeMetrics.InitializeGaugeMetrics().RegisterFixedMetrics()
 			err := r.GetLitmusChaosMetrics(client, tt.overallChaosResult, tt.monitoring)
-			fmt.Print(err)
+			if !tt.isErr && err != nil {
+				t.Fatalf("test Failed as not able to get the Chaos result list")
+			}
 		})
 	}
 

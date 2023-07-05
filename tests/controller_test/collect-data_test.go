@@ -6,6 +6,8 @@ import (
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	litmusFakeClientSet "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/fake"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
@@ -17,13 +19,23 @@ func TestGetResultList(t *testing.T) {
 	FakeChaosNameSpace := "Fake Namespace"
 	FakeEngineName := "Fake Engine"
 
-	tests := map[string]struct {
-		chaosresult *v1alpha1.ChaosResult
+	tests := []struct {
+		name        string
+		execFunc    func(client clients.ClientSets, chaosResult *v1alpha1.ChaosResult)
+		chaosResult *v1alpha1.ChaosResult
 		monitoring  *controller.MonitoringEnabled
 		isErr       bool
 	}{
-		"Test Positive-1": {
-			chaosresult: &v1alpha1.ChaosResult{
+		{
+			name: "success:chaos result found",
+			execFunc: func(client clients.ClientSets, chaosResult *v1alpha1.ChaosResult) {
+				_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(chaosResult.Namespace).Create(context.Background(), chaosResult, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("chaosresult not created")
+				}
+			},
+
+			chaosResult: &v1alpha1.ChaosResult{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      FakeEngineName,
 					Namespace: FakeChaosNameSpace,
@@ -33,39 +45,34 @@ func TestGetResultList(t *testing.T) {
 					EngineName:     FakeEngineName,
 				},
 			},
+
 			isErr: false,
 			monitoring: &controller.MonitoringEnabled{
 				IsChaosResultsAvailable: true,
 			},
 		},
-		"Test Negative-1": {
-			chaosresult: &v1alpha1.ChaosResult{},
-			isErr:       true,
+		{
+			name:        "success:empty chaosResult",
+			chaosResult: &v1alpha1.ChaosResult{},
+			execFunc:    func(client clients.ClientSets, chaosResult *v1alpha1.ChaosResult) {},
+			isErr:       false,
 			monitoring: &controller.MonitoringEnabled{
 				IsChaosResultsAvailable: true,
 			},
 		},
-		"Test Negative-2": {
-			isErr:      true,
-			monitoring: &controller.MonitoringEnabled{},
-		},
 	}
 
-	for name, mock := range tests {
-		t.Run(name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			client := CreateFakeClient(t)
-			if !mock.isErr {
-				_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(mock.chaosresult.Namespace).Create(context.Background(), mock.chaosresult, metav1.CreateOptions{})
-				if err != nil {
-					t.Fatalf("chaosresult not created for %v test, err: %v", name, err)
-				}
-			}
+			tt.execFunc(client, tt.chaosResult)
 			resultDetails := &controller.ResultDetails{}
-			_, err := resultDetails.GetResultList(client, FakeChaosNameSpace, mock.monitoring)
-			if !mock.isErr && err != nil {
-				t.Fatalf("test Failed as not able to get the Chaos result list")
+			_, err := resultDetails.GetResultList(client, FakeChaosNameSpace, tt.monitoring)
+			if tt.isErr {
+				require.Error(t, err)
+				return
 			}
-
+			require.NoError(t, err)
 		})
 	}
 }
@@ -82,8 +89,10 @@ func TestGetExperimentMetricsFromResult(t *testing.T) {
 		chaosresult     *v1alpha1.ChaosResult
 		expectedVerdict bool
 		isErr           bool
+		verdict         bool
+		execFunc        func(client clients.ClientSets, engine *v1alpha1.ChaosEngine, result *v1alpha1.ChaosResult)
 	}{
-		"Test Positive-1": {
+		"success": {
 			chaosengine: &v1alpha1.ChaosEngine{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      FakeEngineName,
@@ -130,36 +139,42 @@ func TestGetExperimentMetricsFromResult(t *testing.T) {
 					History: &v1alpha1.HistoryDetails{},
 				},
 			},
-			isErr: false,
+
+			execFunc: func(client clients.ClientSets, engine *v1alpha1.ChaosEngine, result *v1alpha1.ChaosResult) {
+				_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(engine.Namespace).Create(context.Background(), engine, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("engine not created for test, err: %v", err)
+				}
+
+				_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(result.Namespace).Create(context.Background(), result, metav1.CreateOptions{})
+				if err != nil {
+					t.Fatalf("chaosresult not created fortest, err: %v", err)
+				}
+			},
+			isErr:   false,
+			verdict: true,
 		},
-		"Test Negative-1": {
+		"failure: No Chaos Engine": {
 			chaosresult: &v1alpha1.ChaosResult{},
-			isErr:       true,
+			isErr:       false,
+			verdict:     true,
+			execFunc: func(client clients.ClientSets, engine *v1alpha1.ChaosEngine, result *v1alpha1.ChaosResult) {
+			},
 		},
 	}
 
-	for name, mock := range tests {
+	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-
 			client := CreateFakeClient(t)
 			resultDetails := &controller.ResultDetails{}
-			if !mock.isErr {
-				_, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(mock.chaosengine.Namespace).Create(context.Background(), mock.chaosengine, metav1.CreateOptions{})
-				if err != nil {
-					t.Fatalf("engine not created for %v test, err: %v", name, err)
-				}
-
-				_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosResults(mock.chaosresult.Namespace).Create(context.Background(), mock.chaosresult, metav1.CreateOptions{})
-				if err != nil {
-					t.Fatalf("chaosresult not created for %v test, err: %v", name, err)
-				}
+			tt.execFunc(client, tt.chaosengine, tt.chaosresult)
+			verdict, err := resultDetails.GetExperimentMetricsFromResult(tt.chaosresult, client)
+			assert.Equal(t, tt.verdict, verdict)
+			if tt.isErr {
+				require.Error(t, err)
+				return
 			}
-			var err error
-			_, err = resultDetails.GetExperimentMetricsFromResult(mock.chaosresult, client)
-			if !mock.isErr && err != nil {
-				t.Fatalf("Test %q failed: expected error to be nil", name)
-			}
-
+			require.NoError(t, err)
 		})
 	}
 }
