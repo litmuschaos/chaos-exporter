@@ -22,6 +22,8 @@ import (
 type ResultCollector interface {
 	GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error)
 	GetExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error)
+	SetResultDetails()
+	GetResultDetails() ChaosResultDetails
 }
 type ResultDetails struct {
 	resultDetails ChaosResultDetails
@@ -106,10 +108,19 @@ func (r *ResultDetails) GetExperimentMetricsFromResult(chaosResult *litmuschaosv
 	return false, nil
 }
 
+func (r *ResultDetails) SetResultDetails() {
+	r.resultDetails.PassedExperiments = 0
+	r.resultDetails.AwaitedExperiments = 0
+	r.resultDetails.FailedExperiments = 0
+}
+
+func (r *ResultDetails) GetResultDetails() ChaosResultDetails {
+	return r.resultDetails
+}
+
 // initialiseResult create the new instance of the ChaosResultDetails struct
 func initialiseResult() *ChaosResultDetails {
 	return &ChaosResultDetails{}
-
 }
 
 // setName sets name inside resultDetails struct

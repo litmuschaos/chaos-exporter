@@ -66,25 +66,20 @@ func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, ov
 	// and aggregate metrics of all results present inside chaos namespace, if chaos namespace is defined
 	// otherwise it derive metrics for all chaosresults present inside cluster
 	for _, chaosresult := range resultList.Items {
-		r := ResultDetails{
-			resultDetails: ChaosResultDetails{
-				PassedExperiments:  0,
-				FailedExperiments:  0,
-				AwaitedExperiments: 0,
-			},
-		}
 
+		m.ResultCollector.SetResultDetails()
 		// deriving metrics data from the chaosresult
 		skip, err := m.ResultCollector.GetExperimentMetricsFromResult(&chaosresult, clients)
+		resultDetails := m.ResultCollector.GetResultDetails()
 		if err != nil {
 			return err
 		}
 		// generating the aggeregate metrics from per chaosresult metric
-		namespacedScopeMetrics.AwaitedExperiments += r.resultDetails.AwaitedExperiments
-		namespacedScopeMetrics.PassedExperiments += r.resultDetails.PassedExperiments
-		namespacedScopeMetrics.FailedExperiments += r.resultDetails.FailedExperiments
+		namespacedScopeMetrics.AwaitedExperiments += resultDetails.AwaitedExperiments
+		namespacedScopeMetrics.PassedExperiments += resultDetails.PassedExperiments
+		namespacedScopeMetrics.FailedExperiments += resultDetails.FailedExperiments
 		namespacedScopeMetrics.ExperimentsInstalledCount++
-		namespacedScopeMetrics.ExperimentRunCount += r.resultDetails.AwaitedExperiments + r.resultDetails.PassedExperiments + r.resultDetails.FailedExperiments
+		namespacedScopeMetrics.ExperimentRunCount += resultDetails.AwaitedExperiments + resultDetails.PassedExperiments + resultDetails.FailedExperiments
 		// skipping exporting metrics for the results, whose chaosengine is either completed or not exist
 		if skip {
 			continue
@@ -95,26 +90,26 @@ func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, ov
 
 		//DISPLAY THE METRICS INFORMATION
 		log.InfoWithValues("The chaos metrics are as follows", logrus.Fields{
-			"ResultName":             r.resultDetails.Name,
-			"ResultNamespace":        r.resultDetails.Namespace,
-			"PassedExperiments":      r.resultDetails.PassedExperiments,
-			"FailedExperiments":      r.resultDetails.FailedExperiments,
-			"AwaitedExperiments":     r.resultDetails.AwaitedExperiments,
-			"ProbeSuccessPercentage": r.resultDetails.ProbeSuccessPercentage,
-			"StartTime":              r.resultDetails.StartTime,
-			"EndTime":                r.resultDetails.EndTime,
-			"ChaosInjectTime":        r.resultDetails.InjectionTime,
-			"TotalDuration":          r.resultDetails.TotalDuration,
-			"ResultVerdict":          r.resultDetails.Verdict,
-			"FaultName":              r.resultDetails.FaultName,
+			"ResultName":             resultDetails.Name,
+			"ResultNamespace":        resultDetails.Namespace,
+			"PassedExperiments":      resultDetails.PassedExperiments,
+			"FailedExperiments":      resultDetails.FailedExperiments,
+			"AwaitedExperiments":     resultDetails.AwaitedExperiments,
+			"ProbeSuccessPercentage": resultDetails.ProbeSuccessPercentage,
+			"StartTime":              resultDetails.StartTime,
+			"EndTime":                resultDetails.EndTime,
+			"ChaosInjectTime":        resultDetails.InjectionTime,
+			"TotalDuration":          resultDetails.TotalDuration,
+			"ResultVerdict":          resultDetails.Verdict,
+			"FaultName":              resultDetails.FaultName,
 		})
 
 		// setting chaosresult metrics for the given chaosresult
-		verdictValue := m.GaugeMetrics.unsetOutdatedMetrics(r.resultDetails)
-		m.GaugeMetrics.setResultChaosMetrics(r.resultDetails, verdictValue)
+		verdictValue := m.GaugeMetrics.unsetOutdatedMetrics(resultDetails)
+		m.GaugeMetrics.setResultChaosMetrics(resultDetails, verdictValue)
 		// setting chaosresult aws metrics for the given chaosresult, which can be used for cloudwatch
 		if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
-			awsConfig.setAwsResultChaosMetrics(r.resultDetails)
+			awsConfig.setAwsResultChaosMetrics(resultDetails)
 		}
 	}
 	if engineCount == 0 {

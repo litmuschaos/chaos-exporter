@@ -51,6 +51,20 @@ func (mr *MockResultCollectorMockRecorder) GetExperimentMetricsFromResult(arg0, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetExperimentMetricsFromResult", reflect.TypeOf((*MockResultCollector)(nil).GetExperimentMetricsFromResult), arg0, arg1)
 }
 
+// GetResultDetails mocks base method.
+func (m *MockResultCollector) GetResultDetails() controller.ChaosResultDetails {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetResultDetails")
+	ret0, _ := ret[0].(controller.ChaosResultDetails)
+	return ret0
+}
+
+// GetResultDetails indicates an expected call of GetResultDetails.
+func (mr *MockResultCollectorMockRecorder) GetResultDetails() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResultDetails", reflect.TypeOf((*MockResultCollector)(nil).GetResultDetails))
+}
+
 // GetResultList mocks base method.
 func (m *MockResultCollector) GetResultList(arg0 clients.ClientSets, arg1 string, arg2 *controller.MonitoringEnabled) (v1alpha1.ChaosResultList, error) {
 	m.ctrl.T.Helper()
@@ -64,4 +78,16 @@ func (m *MockResultCollector) GetResultList(arg0 clients.ClientSets, arg1 string
 func (mr *MockResultCollectorMockRecorder) GetResultList(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetResultList", reflect.TypeOf((*MockResultCollector)(nil).GetResultList), arg0, arg1, arg2)
+}
+
+// SetResultDetails mocks base method.
+func (m *MockResultCollector) SetResultDetails() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetResultDetails")
+}
+
+// SetResultDetails indicates an expected call of SetResultDetails.
+func (mr *MockResultCollectorMockRecorder) SetResultDetails() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetResultDetails", reflect.TypeOf((*MockResultCollector)(nil).SetResultDetails))
 }

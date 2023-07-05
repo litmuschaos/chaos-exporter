@@ -284,7 +284,6 @@ type GaugeMetrics struct {
 type MetricesCollecter struct {
 	ResultCollector ResultCollector
 	GaugeMetrics    GaugeMetrics
-	ResultDetails   ResultDetails
 }
 
 // MonitoringEnabled contains existence/availability of chaosEngines and chaosResults
