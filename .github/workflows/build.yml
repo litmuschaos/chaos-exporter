@@ -93,7 +93,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
      
-      #Install and configure a kind cluster
+      #Install and configure a k3S cluster
       - name: Installing Prerequisites (K3S Cluster)
         env: 
           KUBECONFIG: /etc/rancher/k3s/k3s.yaml
