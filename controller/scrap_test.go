@@ -5,6 +5,8 @@ import (
 	"github.com/litmuschaos/chaos-exporter/controller"
 	"github.com/litmuschaos/chaos-exporter/controller/mocks"
 	v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 )
@@ -14,8 +16,11 @@ func TestGetLitmusChaosMetrics(t *testing.T) {
 	defer mockCtl.Finish()
 	mockCollectData := mocks.NewMockResultCollector(mockCtl)
 
-	//FakeEngineName := "Fake Engine"
-	//FakeNamespace := "Fake Namespace"
+	r := controller.MetricesCollecter{
+		ResultCollector: mockCollectData,
+	}
+
+	r.GaugeMetrics.InitializeGaugeMetrics().RegisterFixedMetrics()
 
 	tests := []struct {
 		name               string
@@ -25,7 +30,7 @@ func TestGetLitmusChaosMetrics(t *testing.T) {
 		overallChaosResult *v1alpha1.ChaosResultList
 	}{
 		{
-			name: "TestGetLitmusChaosMetrics_Success",
+			name: "success",
 			execFunc: func() {
 				mockCollectData.EXPECT().GetResultList(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(v1alpha1.ChaosResultList{
@@ -53,6 +58,17 @@ func TestGetLitmusChaosMetrics(t *testing.T) {
 				},
 			},
 			monitoring: &controller.MonitoringEnabled{},
+			isErr:      false,
+		},
+		{
+			name: "failure: no ChaosResultList found",
+			execFunc: func() {
+				mockCollectData.EXPECT().GetResultList(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(v1alpha1.ChaosResultList{}, errors.New("Fake Error")).Times(1)
+			},
+			overallChaosResult: &v1alpha1.ChaosResultList{},
+			monitoring:         &controller.MonitoringEnabled{},
+			isErr:              true,
 		},
 	}
 	for _, tt := range tests {
@@ -60,15 +76,12 @@ func TestGetLitmusChaosMetrics(t *testing.T) {
 			tt.execFunc()
 
 			client := CreateFakeClient(t)
-			r := controller.MetricesCollecter{
-				ResultCollector: mockCollectData,
-			}
-
-			r.GaugeMetrics.InitializeGaugeMetrics().RegisterFixedMetrics()
 			err := r.GetLitmusChaosMetrics(client, tt.overallChaosResult, tt.monitoring)
-			if !tt.isErr && err != nil {
-				t.Fatalf("test Failed as not able to get the Chaos result list")
+			if tt.isErr {
+				require.Error(t, err)
+				return
 			}
+			require.NoError(t, err)
 		})
 	}
 

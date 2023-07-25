@@ -166,7 +166,7 @@ func TestGetExperimentMetricsFromResult(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			client := CreateFakeClient(t)
-			resultDetails := &controller.ResultDetails{}
+			resultDetails := controller.ResultDetails{}
 			tt.execFunc(client, tt.chaosengine, tt.chaosresult)
 			verdict, err := resultDetails.GetExperimentMetricsFromResult(tt.chaosresult, client)
 			assert.Equal(t, tt.verdict, verdict)
