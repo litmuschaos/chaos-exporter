@@ -87,9 +87,10 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 
 	// it won't export/override the metrics if chaosengine is in completed state and
 	// experiment's final verdict[passed,failed,stopped] is already exported/overridden
+	// and 'litmuschaos_experiment_verdict' metric was reset to 0
 	if engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted {
 		result, ok := matchVerdict[string(resultDetails.UID)]
-		if !ok || (ok && result.Verdict == resultDetails.Verdict) {
+		if !ok || (ok && result.Verdict == resultDetails.Verdict && result.VerdictReset) {
 			return true, nil
 		}
 	}
