@@ -39,6 +39,7 @@ type ResultData struct {
 	AppLabel               string
 	Verdict                string
 	Count                  int
+	VerdictReset           bool
 	ProbeSuccessPercentage float64
 	FaultName              string
 }

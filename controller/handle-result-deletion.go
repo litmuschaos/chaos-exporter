@@ -70,12 +70,14 @@ func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResult
 		}
 	default:
 		result = initialiseResultData().
-			setCount(1)
+			setCount(1).
+			setVerdictReset(false)
 	}
 
 	// update the values inside matchVerdict
 	matchVerdict[string(resultDetails.UID)] = result.setVerdict(resultDetails.Verdict).
-		setProbeSuccesPercentage(resultDetails.ProbeSuccessPercentage)
+		setProbeSuccesPercentage(resultDetails.ProbeSuccessPercentage).
+		setVerdictReset(reset)
 
 	if reset {
 		return float64(0)
@@ -104,6 +106,7 @@ func (resultDetails *ChaosResultDetails) setResultData() {
 		setVerdict(resultDetails.Verdict).
 		setFaultName(resultDetails.FaultName).
 		setCount(0).
+		setVerdictReset(false).
 		setProbeSuccesPercentage(resultDetails.ProbeSuccessPercentage)
 
 	if resultStore[string(resultDetails.UID)] != nil {
@@ -163,6 +166,12 @@ func (resultData *ResultData) setFaultName(fault string) *ResultData {
 // setCount sets the count inside resultData struct
 func (resultData *ResultData) setCount(count int) *ResultData {
 	resultData.Count = count
+	return resultData
+}
+
+// setVerdictReset sets the VerdictReset inside resultData struct
+func (resultData *ResultData) setVerdictReset(verdictreset bool) *ResultData {
+	resultData.VerdictReset = verdictreset
 	return resultData
 }
 
