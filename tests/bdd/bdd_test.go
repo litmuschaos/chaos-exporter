@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
 	"os"
 	"os/exec"
@@ -31,15 +32,15 @@ import (
 	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
 	"github.com/pkg/errors"
 
-	"github.com/litmuschaos/chaos-exporter/pkg/clients"
-	"github.com/litmuschaos/chaos-exporter/pkg/log"
-	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
+	clientv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/litmuschaos/chaos-exporter/pkg/clients"
+	"github.com/litmuschaos/chaos-exporter/pkg/log"
 
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -72,7 +73,7 @@ var _ = BeforeSuite(func() {
 	client.KubeClient, err = kubernetes.NewForConfig(config)
 	Expect(err).To(BeNil(), "failed to generate k8sClientSet")
 
-	client.LitmusClient, err = chaosClient.NewForConfig(config)
+	client.LitmusClient, err = clientv1alpha1.NewForConfig(config)
 	Expect(err).To(BeNil(), "failed to generate litmusClientSet")
 
 	By("Installing Litmus")
@@ -203,7 +204,7 @@ var _ = BeforeSuite(func() {
 		},
 	}
 
-	_, err = client.LitmusClient.ChaosEngines("litmus").Create(context.Background(), chaosEngine, metav1.CreateOptions{})
+	_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines("litmus").Create(context.Background(), chaosEngine, metav1.CreateOptions{})
 	Expect(err).To(
 		BeNil(),
 		"while building ChaosEngine engine-nginx in namespace litmus",
@@ -262,7 +263,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 			By("Waiting for verdict to be Pass in ChaosResult")
 			deadline := time.Now().Add(3 * time.Minute)
 			for {
-				chaosengine, err := client.LitmusClient.ChaosResults("litmus").Get(context.Background(), "engine-nginx-pod-delete", metav1.GetOptions{})
+				chaosengine, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosResults("litmus").Get(context.Background(), "engine-nginx-pod-delete", metav1.GetOptions{})
 				time.Sleep(1 * time.Second)
 				if time.Now().After(deadline) {
 					fmt.Printf(`Timeout while waiting for verdict in the chaos result to be "Pass" \n`)
