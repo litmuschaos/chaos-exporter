@@ -105,7 +105,7 @@ var _ = BeforeSuite(func() {
 	log.Info("RBAC created")
 
 	By("Installing Generic Experiments")
-	err = exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos/master?file=charts/generic/experiments.yaml", "-n", "litmus").Run()
+	err = exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos/master?file=faults/kubernetes/experiments.yaml", "-n", "litmus").Run()
 	Expect(err).To(BeNil(), "unable to install experiments")
 	log.Info("generic experiments created")
 
