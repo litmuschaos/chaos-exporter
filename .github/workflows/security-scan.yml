@@ -4,22 +4,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  snyk:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/golang@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
   trivy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
       - name: Build an image from Dockerfile
         run: |
-          docker build -f build/Dockerfile -t docker.io/litmuschaos/chaos-exporter:${{ github.sha }} . --build-arg TARGETARCH=amd64
+          docker build -f Dockerfile -t docker.io/litmuschaos/chaos-exporter:${{ github.sha }} . --build-arg TARGETARCH=amd64
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
