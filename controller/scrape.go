@@ -28,13 +28,13 @@ import (
 
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 )
 
 var err error
 
 // GetLitmusChaosMetrics derive and send the chaos metrics
-func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList, monitoringEnabled *MonitoringEnabled) error {
+func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList, monitoringEnabled *MonitoringEnabled) error {
 	engineCount := 0
 
 	// initialising the parameters for the namespaced scope metrics
@@ -53,13 +53,12 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	}
 	watchNamespace := os.Getenv("WATCH_NAMESPACE")
 	// Getting list of all the chaosresults for the monitoring
-	resultList, err := GetResultList(clients, watchNamespace, monitoringEnabled)
+	resultList, err := m.ResultCollector.GetResultList(clients, watchNamespace, monitoringEnabled)
 	if err != nil {
 		return err
 	}
-
 	// unset the metrics correspond to deleted chaosresults
-	gaugeMetrics.unsetDeletedChaosResults(overallChaosResults, &resultList)
+	m.GaugeMetrics.unsetDeletedChaosResults(overallChaosResults, &resultList)
 	// updating the overall chaosresults items to latest
 	overallChaosResults.Items = resultList.Items
 
@@ -68,14 +67,10 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	// otherwise it derive metrics for all chaosresults present inside cluster
 	for _, chaosresult := range resultList.Items {
 
-		resultDetails := ChaosResultDetails{
-			PassedExperiments:  0,
-			FailedExperiments:  0,
-			AwaitedExperiments: 0,
-		}
-
+		m.ResultCollector.SetResultDetails()
 		// deriving metrics data from the chaosresult
-		skip, err := resultDetails.getExperimentMetricsFromResult(&chaosresult, clients)
+		skip, err := m.ResultCollector.GetExperimentMetricsFromResult(&chaosresult, clients)
+		resultDetails := m.ResultCollector.GetResultDetails()
 		if err != nil {
 			return err
 		}
@@ -100,17 +95,18 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 			"PassedExperiments":      resultDetails.PassedExperiments,
 			"FailedExperiments":      resultDetails.FailedExperiments,
 			"AwaitedExperiments":     resultDetails.AwaitedExperiments,
-			"ProbeSuccessPercentage": resultDetails.ProbeSuccesPercentage,
+			"ProbeSuccessPercentage": resultDetails.ProbeSuccessPercentage,
 			"StartTime":              resultDetails.StartTime,
 			"EndTime":                resultDetails.EndTime,
 			"ChaosInjectTime":        resultDetails.InjectionTime,
 			"TotalDuration":          resultDetails.TotalDuration,
 			"ResultVerdict":          resultDetails.Verdict,
+			"FaultName":              resultDetails.FaultName,
 		})
 
 		// setting chaosresult metrics for the given chaosresult
-		verdictValue := gaugeMetrics.unsetOutdatedMetrics(resultDetails)
-		gaugeMetrics.setResultChaosMetrics(resultDetails, verdictValue)
+		verdictValue := m.GaugeMetrics.unsetOutdatedMetrics(resultDetails)
+		m.GaugeMetrics.setResultChaosMetrics(resultDetails, verdictValue)
 		// setting chaosresult aws metrics for the given chaosresult, which can be used for cloudwatch
 		if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
 			awsConfig.setAwsResultChaosMetrics(resultDetails)
@@ -127,7 +123,7 @@ func (gaugeMetrics *GaugeMetrics) GetLitmusChaosMetrics(clients clients.ClientSe
 	}
 
 	//setting aggregate metrics from the all chaosresults
-	gaugeMetrics.setNamespacedChaosMetrics(namespacedScopeMetrics, watchNamespace)
+	m.GaugeMetrics.setNamespacedChaosMetrics(namespacedScopeMetrics, watchNamespace)
 	//setting aggregate aws metrics from the all chaosresults, which can be used for cloudwatch
 	if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
 		awsConfig.setAwsNamespacedChaosMetrics(namespacedScopeMetrics)
@@ -155,46 +151,37 @@ func (gaugeMetrics *GaugeMetrics) setNamespacedChaosMetrics(namespacedScopeMetri
 
 // setResultChaosMetrics sets metrics for the given chaosresult details
 func (gaugeMetrics *GaugeMetrics) setResultChaosMetrics(resultDetails ChaosResultDetails, verdictValue float64) {
-	if strings.ToLower(injectionTimeFilter) == "disable" {
-		gaugeMetrics.ResultAwaitedExperimentsWithoutInjectionTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName).Set(resultDetails.AwaitedExperiments)
-	} else {
-		gaugeMetrics.ResultAwaitedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName,
-			resultDetails.ChaosInjectLabel).Set(resultDetails.AwaitedExperiments)
-	}
-	gaugeMetrics.ResultPassedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.PassedExperiments)
-	gaugeMetrics.ResultFailedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.FailedExperiments)
-	gaugeMetrics.ResultProbeSuccessPercentage.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.ProbeSuccesPercentage)
+
+	gaugeMetrics.ResultAwaitedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName, resultDetails.FaultName).Set(resultDetails.AwaitedExperiments)
+	gaugeMetrics.ResultPassedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName).Set(resultDetails.PassedExperiments)
+	gaugeMetrics.ResultFailedExperiments.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName).Set(resultDetails.FailedExperiments)
+	gaugeMetrics.ResultProbeSuccessPercentage.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName).Set(resultDetails.ProbeSuccessPercentage)
 	switch strings.ToLower(resultDetails.Verdict) {
 	case "awaited":
-		gaugeMetrics.ResultVerdict.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.Verdict, fmt.Sprintf("%f", resultDetails.ProbeSuccesPercentage),
-			resultDetails.AppLabel, resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, resultDetails.ChaosInjectLabel).Set(float64(0))
+		gaugeMetrics.ResultVerdict.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.Verdict, fmt.Sprintf("%f", resultDetails.ProbeSuccessPercentage),
+			resultDetails.AppLabel, resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, resultDetails.FaultName).Set(float64(0))
 	default:
-		gaugeMetrics.ResultVerdict.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.Verdict, fmt.Sprintf("%f", resultDetails.ProbeSuccesPercentage),
-			resultDetails.AppLabel, resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, resultDetails.ChaosInjectLabel).Set(verdictValue)
+		gaugeMetrics.ResultVerdict.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.Verdict, fmt.Sprintf("%f", resultDetails.ProbeSuccessPercentage),
+			resultDetails.AppLabel, resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, resultDetails.FaultName).Set(verdictValue)
 	}
-	gaugeMetrics.ExperimentStartTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.StartTime)
-	gaugeMetrics.ExperimentEndTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.EndTime)
-	gaugeMetrics.ExperimentChaosInjectedTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(float64(resultDetails.InjectionTime))
-	gaugeMetrics.ExperimentTotalDuration.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext).Set(resultDetails.TotalDuration)
+	gaugeMetrics.ExperimentStartTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName).Set(resultDetails.StartTime)
+	gaugeMetrics.ExperimentEndTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName).Set(resultDetails.EndTime)
+	gaugeMetrics.ExperimentChaosInjectedTime.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName).Set(float64(resultDetails.InjectionTime))
+	gaugeMetrics.ExperimentTotalDuration.WithLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName).Set(resultDetails.TotalDuration)
 }
 
 // unsetResultChaosMetrics unset metrics for the given chaosresult details
 func (gaugeMetrics *GaugeMetrics) unsetResultChaosMetrics(resultDetails *ChaosResultDetails) {
-	if strings.ToLower(injectionTimeFilter) == "disable" {
-		gaugeMetrics.ResultAwaitedExperimentsWithoutInjectionTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName)
-	} else {
-		gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName, resultDetails.ChaosInjectLabel)
-	}
-	gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName, resultDetails.ChaosInjectLabel)
-	gaugeMetrics.ResultPassedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
-	gaugeMetrics.ResultFailedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
-	gaugeMetrics.ResultProbeSuccessPercentage.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
+	gaugeMetrics.ResultAwaitedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.WorkflowName, resultDetails.FaultName)
+	gaugeMetrics.ResultPassedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName)
+	gaugeMetrics.ResultFailedExperiments.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName)
+	gaugeMetrics.ResultProbeSuccessPercentage.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName)
 	gaugeMetrics.ResultVerdict.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.Verdict,
-		fmt.Sprintf("%f", resultDetails.ProbeSuccesPercentage), resultDetails.AppLabel, resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, resultDetails.ChaosInjectLabel)
-	gaugeMetrics.ExperimentStartTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
-	gaugeMetrics.ExperimentEndTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
-	gaugeMetrics.ExperimentChaosInjectedTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
-	gaugeMetrics.ExperimentTotalDuration.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext)
+		fmt.Sprintf("%f", resultDetails.ProbeSuccessPercentage), resultDetails.AppLabel, resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, resultDetails.FaultName)
+	gaugeMetrics.ExperimentStartTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName)
+	gaugeMetrics.ExperimentEndTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName)
+	gaugeMetrics.ExperimentChaosInjectedTime.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName)
+	gaugeMetrics.ExperimentTotalDuration.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName, resultDetails.ChaosEngineContext, resultDetails.FaultName)
 }
 
 // setAwsResultChaosMetrics sets aws metrics for the given chaosresult
@@ -205,7 +192,7 @@ func (awsConfig *AWSConfig) setAwsResultChaosMetrics(resultDetails ChaosResultDe
 	awsConfig.putAwsMetricData(sess, "chaosresult_passed_experiments", "Count", resultDetails.PassedExperiments)
 	awsConfig.putAwsMetricData(sess, "chaosresult_failed_experiments", "Count", resultDetails.FailedExperiments)
 	awsConfig.putAwsMetricData(sess, "chaosresult_awaited_experiments", "Count", resultDetails.AwaitedExperiments)
-	awsConfig.putAwsMetricData(sess, "chaosresult_probe_success_percentage", "Count", resultDetails.ProbeSuccesPercentage)
+	awsConfig.putAwsMetricData(sess, "chaosresult_probe_success_percentage", "Count", resultDetails.ProbeSuccessPercentage)
 	awsConfig.putAwsMetricData(sess, "chaosresult_start_time", "Count", resultDetails.StartTime)
 	awsConfig.putAwsMetricData(sess, "chaosresult_end_time", "Count", resultDetails.EndTime)
 	awsConfig.putAwsMetricData(sess, "chaosresult_inject_time", "Count", float64(resultDetails.InjectionTime))

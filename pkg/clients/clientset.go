@@ -2,8 +2,7 @@ package clients
 
 import (
 	"flag"
-
-	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
+	clientv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -12,8 +11,8 @@ import (
 
 // ClientSets is a collection of clientSets and kubeConfig needed
 type ClientSets struct {
-	KubeClient   *kubernetes.Clientset
-	LitmusClient *chaosClient.LitmuschaosV1alpha1Client
+	KubeClient   kubernetes.Interface
+	LitmusClient clientv1alpha1.Interface
 	KubeConfig   *rest.Config
 }
 
@@ -57,8 +56,8 @@ func GenerateK8sClientSet(config *rest.Config) (*kubernetes.Clientset, error) {
 }
 
 // GenerateLitmusClientSet will generate a LitmusClient
-func GenerateLitmusClientSet(config *rest.Config) (*chaosClient.LitmuschaosV1alpha1Client, error) {
-	litmusClientSet, err := chaosClient.NewForConfig(config)
+func GenerateLitmusClientSet(config *rest.Config) (*clientv1alpha1.Clientset, error) {
+	litmusClientSet, err := clientv1alpha1.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to create LitmusClientSet, err: %v", err)
 	}

@@ -17,20 +17,22 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
 	"os"
 	"os/exec"
 	"testing"
 	"time"
 
-	v1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
 	"github.com/pkg/errors"
 
-	chaosClient "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned/typed/litmuschaos/v1alpha1"
+	clientv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/client/clientset/versioned"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appv1 "k8s.io/api/apps/v1"
@@ -71,7 +73,7 @@ var _ = BeforeSuite(func() {
 	client.KubeClient, err = kubernetes.NewForConfig(config)
 	Expect(err).To(BeNil(), "failed to generate k8sClientSet")
 
-	client.LitmusClient, err = chaosClient.NewForConfig(config)
+	client.LitmusClient, err = clientv1alpha1.NewForConfig(config)
 	Expect(err).To(BeNil(), "failed to generate litmusClientSet")
 
 	By("Installing Litmus")
@@ -82,7 +84,7 @@ var _ = BeforeSuite(func() {
 		Times(uint(180 / 2)).
 		Wait(time.Duration(2) * time.Second).
 		Try(func(attempt uint) error {
-			podSpec, err := client.KubeClient.CoreV1().Pods("litmus").List(metav1.ListOptions{LabelSelector: "name=chaos-operator"})
+			podSpec, err := client.KubeClient.CoreV1().Pods("litmus").List(context.Background(), metav1.ListOptions{LabelSelector: "name=chaos-operator"})
 			if err != nil || len(podSpec.Items) == 0 {
 				return errors.Errorf("unable to list chaos-operator, err: %v", err)
 			}
@@ -103,7 +105,7 @@ var _ = BeforeSuite(func() {
 	log.Info("RBAC created")
 
 	By("Installing Generic Experiments")
-	err = exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos/master?file=charts/generic/experiments.yaml", "-n", "litmus").Run()
+	err = exec.Command("kubectl", "apply", "-f", "https://hub.litmuschaos.io/api/chaos/master?file=faults/kubernetes/experiments.yaml", "-n", "litmus").Run()
 	Expect(err).To(BeNil(), "unable to install experiments")
 	log.Info("generic experiments created")
 
@@ -150,14 +152,17 @@ var _ = BeforeSuite(func() {
 			},
 		},
 	}
-	_, err = client.KubeClient.AppsV1().Deployments("litmus").Create(deployment)
+	_, err = client.KubeClient.AppsV1().Deployments("litmus").Create(context.Background(), deployment, metav1.CreateOptions{})
 	Expect(err).To(
 		BeNil(),
 		"while creating nginx deployment in namespace litmus",
 	)
 	log.Info("nginx deployment created")
 
+	// Setting a high level for TSDB_SCRAPE_INTERVAL to verify the reset of experiments_verdicts is working correctly
 	cmd := exec.Command("go", "run", "../../cmd/exporter/main.go", "-kubeconfig="+kubeconfig)
+	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, "TSDB_SCRAPE_INTERVAL=60")
 	err = cmd.Start()
 	Expect(err).To(
 		BeNil(),
@@ -199,7 +204,7 @@ var _ = BeforeSuite(func() {
 		},
 	}
 
-	_, err = client.LitmusClient.ChaosEngines("litmus").Create(chaosEngine)
+	_, err = client.LitmusClient.LitmuschaosV1alpha1().ChaosEngines("litmus").Create(context.Background(), chaosEngine, metav1.CreateOptions{})
 	Expect(err).To(
 		BeNil(),
 		"while building ChaosEngine engine-nginx in namespace litmus",
@@ -207,6 +212,24 @@ var _ = BeforeSuite(func() {
 
 	log.Info("chaos engine created")
 })
+
+func fetchMetrics() (metrics []byte) {
+	response, err := http.Get("http://127.0.0.1:8080/metrics")
+	Expect(err).To(BeNil())
+	if err != nil {
+		fmt.Printf("%s", err)
+		os.Exit(1)
+	} else {
+		defer response.Body.Close()
+		metrics, err = ioutil.ReadAll(response.Body)
+		if err != nil {
+			fmt.Printf("%s", err)
+			os.Exit(1)
+		}
+		fmt.Printf("%s\n", string(metrics))
+	}
+	return
+}
 
 var _ = Describe("BDD on chaos-exporter", func() {
 
@@ -217,7 +240,7 @@ var _ = Describe("BDD on chaos-exporter", func() {
 				Times(uint(180 / 2)).
 				Wait(time.Duration(2) * time.Second).
 				Try(func(attempt uint) error {
-					pod, err := client.KubeClient.CoreV1().Pods("litmus").Get("engine-nginx-runner", metav1.GetOptions{})
+					pod, err := client.KubeClient.CoreV1().Pods("litmus").Get(context.Background(), "engine-nginx-runner", metav1.GetOptions{})
 					if err != nil {
 						return errors.Errorf("unable to get chaos-runner pod, err: %v", err)
 					}
@@ -237,41 +260,58 @@ var _ = Describe("BDD on chaos-exporter", func() {
 	// BDD case 2
 	Context("Curl the prometheus metrics", func() {
 		It("Should return prometheus metrics", func() {
-			By("Running Exporter and Sending get request to metrics")
-			// wait for execution of exporter
-			log.Info("Sleeping for 120 second and wait for exporter to start")
-			time.Sleep(120 * time.Second)
-
-			response, err := http.Get("http://127.0.0.1:8080/metrics")
-			Expect(err).To(BeNil())
-			if err != nil {
-				fmt.Printf("%s", err)
-				os.Exit(1)
-			} else {
-				defer response.Body.Close()
-				metrics, err := ioutil.ReadAll(response.Body)
+			By("Waiting for verdict to be Pass in ChaosResult")
+			deadline := time.Now().Add(3 * time.Minute)
+			for {
+				chaosengine, err := client.LitmusClient.LitmuschaosV1alpha1().ChaosResults("litmus").Get(context.Background(), "engine-nginx-pod-delete", metav1.GetOptions{})
+				time.Sleep(1 * time.Second)
+				if time.Now().After(deadline) {
+					fmt.Printf(`Timeout while waiting for verdict in the chaos result to be "Pass" \n`)
+					fmt.Printf(`Last value of verdict in ChaosResult is "%v" \n`, chaosengine.Status.ExperimentStatus.Verdict)
+					os.Exit(1)
+				}
 				if err != nil {
+					if k8serrors.IsNotFound(err) {
+						continue
+					}
 					fmt.Printf("%s", err)
 					os.Exit(1)
 				}
-				fmt.Printf("%s\n", string(metrics))
-
-				By("Should be matched with total_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_cluster_scoped_experiments_run_count 1"))
-
-				By("Should be matched with failed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_cluster_scoped_failed_experiments 0"))
-
-				By("Should be matched with passed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring("litmuschaos_cluster_scoped_passed_experiments 1"))
-
-				By("Should be matched with engine_failed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_failed_experiments{chaosengine_context="",chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 0`))
-
-				By("Should be matched with engine_passed_experiments regx")
-				Expect(string(metrics)).Should(ContainSubstring(`litmuschaos_passed_experiments{chaosengine_context="",chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus"} 1`))
-
+				if chaosengine.Status.ExperimentStatus.Verdict == "Pass" {
+					break
+				}
 			}
+
+			log.Info("Waiting 5s to wait for chaos exporter to manage the change of verdict in the ChaosResult")
+			time.Sleep(5 * time.Second)
+
+			log.Info("Fetch metrics")
+			metrics_before_reset := fetchMetrics()
+
+			By("Should be matched with experiment_verdict regx with value of 1")
+			Expect(string(metrics_before_reset)).Should(ContainSubstring(`litmuschaos_experiment_verdict{app_kind="deployment",app_label="app=nginx",app_namespace="litmus",chaosengine_context="",chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus",chaosresult_verdict="Pass",fault_name="pod-delete",probe_success_percentage="100.000000",workflow_name=""} 1`))
+
+			log.Info("Waiting for experiment_verdict to reset to 0")
+			time.Sleep(65 * time.Second)
+
+			metrics_after_reset := fetchMetrics()
+			By("Should be matched with experiment_verdict regx with value of 0")
+			Expect(string(metrics_after_reset)).Should(ContainSubstring(`litmuschaos_experiment_verdict{app_kind="deployment",app_label="app=nginx",app_namespace="litmus",chaosengine_context="",chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus",chaosresult_verdict="Pass",fault_name="pod-delete",probe_success_percentage="100.000000",workflow_name=""} 0`))
+
+			By("Should be matched with total_experiments regx")
+			Expect(string(metrics_after_reset)).Should(ContainSubstring("litmuschaos_cluster_scoped_experiments_run_count 1"))
+
+			By("Should be matched with failed_experiments regx")
+			Expect(string(metrics_after_reset)).Should(ContainSubstring("litmuschaos_cluster_scoped_failed_experiments 0"))
+
+			By("Should be matched with passed_experiments regx")
+			Expect(string(metrics_after_reset)).Should(ContainSubstring("litmuschaos_cluster_scoped_passed_experiments 1"))
+
+			By("Should be matched with engine_failed_experiments regx")
+			Expect(string(metrics_after_reset)).Should(ContainSubstring(`litmuschaos_failed_experiments{chaosengine_context="",chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus",fault_name="pod-delete"} 0`))
+
+			By("Should be matched with engine_passed_experiments regx")
+			Expect(string(metrics_after_reset)).Should(ContainSubstring(`litmuschaos_passed_experiments{chaosengine_context="",chaosengine_name="engine-nginx",chaosresult_name="engine-nginx-pod-delete",chaosresult_namespace="litmus",fault_name="pod-delete"} 1`))
 		})
 	})
 })

@@ -17,13 +17,11 @@ limitations under the License.
 package controller
 
 import (
-	"os"
-	"strings"
 	"time"
 
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -33,10 +31,13 @@ func Exporter(clients clients.ClientSets) {
 	// Register the fixed (count) chaos metrics
 	log.Info("Registering Fixed Metrics")
 
-	gaugeMetrics := GaugeMetrics{}
+	r := MetricesCollecter{
+		ResultCollector: &ResultDetails{},
+	}
+	//gaugeMetrics := GaugeMetrics{}
 	overallChaosResults := litmuschaosv1alpha1.ChaosResultList{}
 
-	gaugeMetrics.InitializeGaugeMetrics().
+	r.GaugeMetrics.InitializeGaugeMetrics().
 		RegisterFixedMetrics()
 
 	monitoringEnabled := MonitoringEnabled{
@@ -45,7 +46,7 @@ func Exporter(clients clients.ClientSets) {
 	}
 
 	for {
-		if err := gaugeMetrics.GetLitmusChaosMetrics(clients, &overallChaosResults, &monitoringEnabled); err != nil {
+		if err := r.GetLitmusChaosMetrics(clients, &overallChaosResults, &monitoringEnabled); err != nil {
 			log.Errorf("err: %v", err)
 		}
 		time.Sleep(1000 * time.Millisecond)
@@ -54,16 +55,9 @@ func Exporter(clients clients.ClientSets) {
 
 // RegisterFixedMetrics register the prometheus metrics
 func (gaugeMetrics *GaugeMetrics) RegisterFixedMetrics() {
-	if os.Getenv("INJECTION_TIME_FILTER") != "" {
-		injectionTimeFilter = os.Getenv("INJECTION_TIME_FILTER")
-	}
 	prometheus.MustRegister(gaugeMetrics.ResultPassedExperiments)
 	prometheus.MustRegister(gaugeMetrics.ResultFailedExperiments)
-	if strings.ToLower(injectionTimeFilter) == "disable" {
-		prometheus.MustRegister(gaugeMetrics.ResultAwaitedExperimentsWithoutInjectionTime)
-	} else {
-		prometheus.MustRegister(gaugeMetrics.ResultAwaitedExperiments)
-	}
+	prometheus.MustRegister(gaugeMetrics.ResultAwaitedExperiments)
 	prometheus.MustRegister(gaugeMetrics.ResultProbeSuccessPercentage)
 	prometheus.MustRegister(gaugeMetrics.ResultVerdict)
 	prometheus.MustRegister(gaugeMetrics.ExperimentStartTime)

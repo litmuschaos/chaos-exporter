@@ -38,7 +38,7 @@ unused-package-check:
 	fi
 
 .PHONY: deps
-deps: build_check_docker godeps bdddeps
+deps: build_check_docker godeps
 
 .PHONY: build_check_docker
 build_check_docker:
@@ -55,17 +55,6 @@ godeps:
 	@echo "INFO:\tverifying dependencies for chaos exporter build ..."
 	@go get -u -v golang.org/x/lint/golint
 	@go get -u -v golang.org/x/tools/cmd/goimports
-	
-.PHONY: bdddeps
-bdddeps:
-	@echo "------------------"
-	@echo "bdd test dependencies"
-	@echo "INFO:\tverifying dependencies for bdddeps ..."
-	@echo "------------------"
-	@go get -u github.com/onsi/ginkgo
-	@go get -u github.com/onsi/gomega 
-	kubectl create -f https://raw.githubusercontent.com/litmuschaos/chaos-operator/master/deploy/chaos_crds.yaml
-	kubectl create ns litmus
 
 .PHONY: test
 test:
@@ -80,7 +69,7 @@ build:
 	@echo "-------------------------"
 	@echo "--> Build go-runner image" 
 	@echo "-------------------------"
-	@docker buildx build --file Dockerfile --progress plane  --no-cache --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@docker buildx build --file Dockerfile --progress plain --no-cache --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 .PHONY: push
 push:
@@ -88,7 +77,7 @@ push:
 	@echo "------------------------------"
 	@echo "--> Pushing image"
 	@echo "------------------------------"
-	@docker buildx build --file Dockerfile --progress plane --no-cache --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
+	@docker buildx build --file Dockerfile --progress plain --no-cache --push --platform linux/arm64,linux/amd64 --tag $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 .PHONY: build-amd64
 build-amd64:

@@ -1,24 +1,38 @@
 package controller
 
 import (
+	"context"
 	"math"
 	"strconv"
 	"strings"
 
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
-	"github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
-	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/pkg/apis/litmuschaos/v1alpha1"
+	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientTypes "k8s.io/apimachinery/pkg/types"
 )
 
-// GetResultList return the result list correspond to the monitoring enabled chaosengine
-func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
+//go:generate mockgen -destination=mocks/mock_collect-data.go -package=mocks github.com/litmuschaos/chaos-exporter/controller ResultCollector
 
-	chaosResultList, err := clients.LitmusClient.ChaosResults(chaosNamespace).List(metav1.ListOptions{})
+// ResultCollector interface for the both functions GetResultList and getExperimentMetricsFromResult
+type ResultCollector interface {
+	GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error)
+	GetExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error)
+	SetResultDetails()
+	GetResultDetails() ChaosResultDetails
+}
+type ResultDetails struct {
+	resultDetails ChaosResultDetails
+}
+
+// GetResultList return the result list correspond to the monitoring enabled chaosengine
+func (r *ResultDetails) GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
+
+	chaosResultList, err := clients.LitmusClient.LitmuschaosV1alpha1().ChaosResults(chaosNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return litmuschaosv1alpha1.ChaosResultList{}, err
 	}
@@ -40,15 +54,14 @@ func GetResultList(clients clients.ClientSets, chaosNamespace string, monitoring
 	return *chaosResultList, nil
 }
 
-// getExperimentMetricsFromResult derive all the metrics data from the chaosresult and set into resultDetails struct
-func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error) {
+// GetExperimentMetricsFromResult derive all the metrics data from the chaosresult and set into resultDetails struct
+func (r *ResultDetails) GetExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error) {
 	verdict := strings.ToLower(string(chaosResult.Status.ExperimentStatus.Verdict))
 	probeSuccesPercentage, err := getProbeSuccessPercentage(chaosResult)
 	if err != nil {
 		return false, err
 	}
-
-	engine, err := clients.LitmusClient.ChaosEngines(chaosResult.Namespace).Get(chaosResult.Spec.EngineName, metav1.GetOptions{})
+	engine, err := clients.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(chaosResult.Namespace).Get(context.Background(), chaosResult.Spec.EngineName, metav1.GetOptions{})
 	if err != nil {
 		// k8serrors.IsNotFound(err) checking k8s resource is found or not,
 		// It will skip this result if k8s resource is not found.
@@ -63,32 +76,32 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 	if err != nil {
 		return false, err
 	}
-
 	// setting all the values inside resultdetails struct
-	resultDetails.setName(chaosResult.Name).
+	r.resultDetails.setName(chaosResult.Name).
 		setUID(chaosResult.UID).
 		setNamespace(chaosResult.Namespace).
-		setProbeSuccesPercentage(probeSuccesPercentage).
+		setProbeSuccessPercentage(probeSuccesPercentage).
 		setVerdict(string(chaosResult.Status.ExperimentStatus.Verdict)).
 		setStartTime(events).
 		setEndTime(events).
 		setChaosInjectTime(events).
 		setChaosEngineName(chaosResult.Spec.EngineName).
 		setChaosEngineContext(engine.Labels[EngineContext]).
-		setChaosInjectLabel().
 		setWorkflowName(engine.Labels[WorkFlowName]).
 		setAppLabel(engine.Spec.Appinfo.Applabel).
 		setAppNs(engine.Spec.Appinfo.Appns).
 		setAppKind(engine.Spec.Appinfo.AppKind).
 		setTotalDuration().
 		setVerdictCount(verdict, chaosResult).
+		setFaultName(engine.Spec.Experiments[0].Name).
 		setResultData()
 
 	// it won't export/override the metrics if chaosengine is in completed state and
 	// experiment's final verdict[passed,failed,stopped] is already exported/overridden
+	// and 'litmuschaos_experiment_verdict' metric was reset to 0
 	if engine.Status.EngineStatus == v1alpha1.EngineStatusCompleted {
-		result, ok := matchVerdict[string(resultDetails.UID)]
-		if !ok || (ok && result.Verdict == resultDetails.Verdict) {
+		result, ok := matchVerdict[string(r.resultDetails.UID)]
+		if !ok || (ok && result.Verdict == r.resultDetails.Verdict && result.VerdictReset) {
 			return true, nil
 		}
 	}
@@ -96,10 +109,19 @@ func (resultDetails *ChaosResultDetails) getExperimentMetricsFromResult(chaosRes
 	return false, nil
 }
 
+func (r *ResultDetails) SetResultDetails() {
+	r.resultDetails.PassedExperiments = 0
+	r.resultDetails.AwaitedExperiments = 0
+	r.resultDetails.FailedExperiments = 0
+}
+
+func (r *ResultDetails) GetResultDetails() ChaosResultDetails {
+	return r.resultDetails
+}
+
 // initialiseResult create the new instance of the ChaosResultDetails struct
 func initialiseResult() *ChaosResultDetails {
 	return &ChaosResultDetails{}
-
 }
 
 // setName sets name inside resultDetails struct
@@ -139,9 +161,9 @@ func (resultDetails *ChaosResultDetails) setVerdictCount(verdict string, chaosRe
 	return resultDetails
 }
 
-// setProbeSuccesPercentage sets ProbeSuccesPercentage inside resultDetails struct
-func (resultDetails *ChaosResultDetails) setProbeSuccesPercentage(probeSuccesPercentage float64) *ChaosResultDetails {
-	resultDetails.ProbeSuccesPercentage = probeSuccesPercentage
+// setProbeSuccessPercentage sets ProbeSuccessPercentage inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setProbeSuccessPercentage(probeSuccessPercentage float64) *ChaosResultDetails {
+	resultDetails.ProbeSuccessPercentage = probeSuccessPercentage
 	return resultDetails
 }
 
@@ -181,14 +203,9 @@ func (resultDetails *ChaosResultDetails) setWorkflowName(workflowName string) *C
 	return resultDetails
 }
 
-// setChaosInjectLabel sets the chaos inject label inside resultDetails struct
-func (resultDetails *ChaosResultDetails) setChaosInjectLabel() *ChaosResultDetails {
-	injectTime := ""
-	if resultDetails.InjectionTime != 0 {
-		injectTime = strconv.Itoa(int(resultDetails.InjectionTime))
-	}
-	resultDetails.ChaosInjectLabel = injectTime
-
+// setFaultName sets the fault name inside resultDetails struct
+func (resultDetails *ChaosResultDetails) setFaultName(faultName string) *ChaosResultDetails {
+	resultDetails.FaultName = faultName
 	return resultDetails
 }
 
@@ -250,7 +267,7 @@ func getProbeSuccessPercentage(chaosResult *litmuschaosv1alpha1.ChaosResult) (fl
 // getEventsForSpecificInvolvedResource derive all the events correspond to the specific resource
 func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceUID clientTypes.UID, chaosNamespace string) (corev1.EventList, error) {
 	finalEventList := corev1.EventList{}
-	eventsList, err := clients.KubeClient.CoreV1().Events(chaosNamespace).List(metav1.ListOptions{})
+	eventsList, err := clients.KubeClient.CoreV1().Events(chaosNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return corev1.EventList{}, err
 	}
