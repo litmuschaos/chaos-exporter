@@ -4,15 +4,16 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 )
 
 // unsetDeletedChaosResults unset the metrics correspond to deleted chaosresults
-func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newChaosResults *litmuschaosv1alpha1.ChaosResultList) {
-	for _, oldResult := range oldChaosResults.Items {
+func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newChaosResults []*litmuschaosv1alpha1.ChaosResult) {
+	for _, oldResult := range oldChaosResults {
 		found := false
-		for _, newResult := range newChaosResults.Items {
+		for _, newResult := range newChaosResults {
 			if oldResult.UID == newResult.UID {
 				found = true
 				break
@@ -22,7 +23,7 @@ func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newC
 		if !found {
 			for _, value := range resultStore[string(oldResult.UID)] {
 
-				probeSuccesPercentage, _ := getProbeSuccessPercentage(&oldResult)
+				probeSuccesPercentage, _ := getProbeSuccessPercentage(oldResult)
 				resultDetails := initialiseResult().
 					setName(oldResult.Name).
 					setNamespace(oldResult.Namespace).
@@ -46,10 +47,13 @@ func (gaugeMetrics *GaugeMetrics) unsetDeletedChaosResults(oldChaosResults, newC
 
 // unsetOutdatedMetrics unset the metrics when chaosresult verdict changes
 // if same chaosresult is continuously repeated more than scrape interval then it sets the metrics value to 0
-func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResultDetails) float64 {
+func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResultDetails) (float64, *time.Duration) {
 	scrapeTime, _ := strconv.Atoi(getEnv("TSDB_SCRAPE_INTERVAL", "10"))
 	result, ok := matchVerdict[string(resultDetails.UID)]
 	reset := false
+	var needRequeue *time.Duration
+
+	scrapeDuration := time.Duration(scrapeTime) * time.Second
 
 	switch ok {
 	case true:
@@ -59,19 +63,19 @@ func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResult
 			gaugeMetrics.ResultVerdict.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName,
 				resultDetails.ChaosEngineContext, result.Verdict, fmt.Sprintf("%f", result.ProbeSuccessPercentage), resultDetails.AppLabel,
 				resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, result.FaultName)
-			result.Count = 1
+			result.Timer = time.Now()
+			needRequeue = &scrapeDuration
 		default:
 			// if time passed scrape time then reset the value to 0
-			if result.Count >= scrapeTime {
+			if time.Since(result.Timer) >= scrapeDuration {
 				reset = true
-			} else {
-				result.Count++
 			}
 		}
 	default:
 		result = initialiseResultData().
-			setCount(1).
+			setTimer(time.Now()).
 			setVerdictReset(false)
+		needRequeue = &scrapeDuration
 	}
 
 	// update the values inside matchVerdict
@@ -80,9 +84,9 @@ func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResult
 		setVerdictReset(reset)
 
 	if reset {
-		return float64(0)
+		return float64(0), needRequeue
 	}
-	return float64(1)
+	return float64(1), needRequeue
 }
 
 // getEnv derived the ENVs and sets the default value if env contains empty value
@@ -105,7 +109,7 @@ func (resultDetails *ChaosResultDetails) setResultData() {
 		setAppLabel(resultDetails.AppLabel).
 		setVerdict(resultDetails.Verdict).
 		setFaultName(resultDetails.FaultName).
-		setCount(0).
+		setTimer(time.Now()).
 		setVerdictReset(false).
 		setProbeSuccesPercentage(resultDetails.ProbeSuccessPercentage)
 
@@ -164,8 +168,8 @@ func (resultData *ResultData) setFaultName(fault string) *ResultData {
 }
 
 // setCount sets the count inside resultData struct
-func (resultData *ResultData) setCount(count int) *ResultData {
-	resultData.Count = count
+func (resultData *ResultData) setTimer(timer time.Time) *ResultData {
+	resultData.Timer = timer
 	return resultData
 }
 

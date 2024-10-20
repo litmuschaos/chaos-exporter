@@ -2,10 +2,11 @@ package controller
 
 import (
 	"errors"
+	"testing"
+
 	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func Test_unsetDeletedChaosResults(t *testing.T) {
@@ -15,8 +16,8 @@ func Test_unsetDeletedChaosResults(t *testing.T) {
 		execFunc       func(details *ChaosResultDetails)
 		isErr          bool
 		resultDetails  *ChaosResultDetails
-		oldChaosResult *v1alpha1.ChaosResultList
-		newChaosResult *v1alpha1.ChaosResultList
+		oldChaosResult []*v1alpha1.ChaosResult
+		newChaosResult []*v1alpha1.ChaosResult
 	}{
 		{
 			name: "success: deleted chaosResult",
@@ -26,21 +27,17 @@ func Test_unsetDeletedChaosResults(t *testing.T) {
 			resultDetails: &ChaosResultDetails{
 				UID: "FAKE-UID-OLD",
 			},
-			oldChaosResult: &v1alpha1.ChaosResultList{
-				Items: []v1alpha1.ChaosResult{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							UID: "FAKE-UID-OLD",
-						},
+			oldChaosResult: []*v1alpha1.ChaosResult{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						UID: "FAKE-UID-OLD",
 					},
 				},
 			},
-			newChaosResult: &v1alpha1.ChaosResultList{
-				Items: []v1alpha1.ChaosResult{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							UID: "FAKE-UID-NEW",
-						},
+			newChaosResult: []*v1alpha1.ChaosResult{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						UID: "FAKE-UID-NEW",
 					},
 				},
 			},

@@ -2,6 +2,8 @@ package controller_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/litmuschaos/chaos-exporter/controller"
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
@@ -12,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"testing"
+	"k8s.io/client-go/util/workqueue"
 )
 
 func TestGetResultList(t *testing.T) {
@@ -183,5 +185,8 @@ func CreateFakeClient(t *testing.T) clients.ClientSets {
 	cs := clients.ClientSets{}
 	cs.KubeClient = fake.NewSimpleClientset([]runtime.Object{}...)
 	cs.LitmusClient = litmusFakeClientSet.NewSimpleClientset([]runtime.Object{}...)
+	stopCh := make(chan struct{})
+	err := cs.SetupInformers(stopCh, cs.KubeClient, cs.LitmusClient, 0, workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()))
+	require.NoError(t, err)
 	return cs
 }

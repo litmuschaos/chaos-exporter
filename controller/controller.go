@@ -17,16 +17,15 @@ limitations under the License.
 package controller
 
 import (
-	"time"
-
 	"github.com/litmuschaos/chaos-exporter/pkg/clients"
 	"github.com/litmuschaos/chaos-exporter/pkg/log"
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/client-go/util/workqueue"
 )
 
 // Exporter continuously collects the chaos metrics for a given chaosengine
-func Exporter(clients clients.ClientSets) {
+func Exporter(clientSet clients.ClientSets, wq workqueue.RateLimitingInterface) {
 	log.Info("Started creating Metrics")
 	// Register the fixed (count) chaos metrics
 	log.Info("Registering Fixed Metrics")
@@ -35,7 +34,7 @@ func Exporter(clients clients.ClientSets) {
 		ResultCollector: &ResultDetails{},
 	}
 	//gaugeMetrics := GaugeMetrics{}
-	overallChaosResults := litmuschaosv1alpha1.ChaosResultList{}
+	overallChaosResults := []*litmuschaosv1alpha1.ChaosResult{}
 
 	r.GaugeMetrics.InitializeGaugeMetrics().
 		RegisterFixedMetrics()
@@ -45,11 +44,18 @@ func Exporter(clients clients.ClientSets) {
 		IsChaosEnginesAvailable: true,
 	}
 
-	for {
-		if err := r.GetLitmusChaosMetrics(clients, &overallChaosResults, &monitoringEnabled); err != nil {
+	// refresh metrics whenever there's a change in chaosengine or chaosresult
+	// or every informer resync duration, whichever is earlier
+	for _, done := wq.Get(); !done; _, done = wq.Get() {
+		needRequeue, err := r.GetLitmusChaosMetrics(clientSet, overallChaosResults, &monitoringEnabled)
+		if err != nil {
 			log.Errorf("err: %v", err)
 		}
-		time.Sleep(1000 * time.Millisecond)
+		wq.Done(clients.ProcessKey)
+		// Add after
+		if needRequeue != nil {
+			wq.AddAfter(clients.ProcessKey, *needRequeue)
+		}
 	}
 }
 

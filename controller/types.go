@@ -17,6 +17,8 @@ limitations under the License.
 package controller
 
 import (
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	clientTypes "k8s.io/apimachinery/pkg/types"
 )
@@ -38,7 +40,7 @@ type ResultData struct {
 	AppNs                  string
 	AppLabel               string
 	Verdict                string
-	Count                  int
+	Timer                  time.Time
 	VerdictReset           bool
 	ProbeSuccessPercentage float64
 	FaultName              string
