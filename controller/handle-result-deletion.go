@@ -62,7 +62,7 @@ func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResult
 		case result.Verdict != resultDetails.Verdict:
 			gaugeMetrics.ResultVerdict.DeleteLabelValues(resultDetails.Namespace, resultDetails.Name, resultDetails.ChaosEngineName,
 				resultDetails.ChaosEngineContext, result.Verdict, fmt.Sprintf("%f", result.ProbeSuccessPercentage), resultDetails.AppLabel,
-				resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, result.FaultName)
+				resultDetails.AppNs, resultDetails.AppKind, resultDetails.WorkflowName, resultDetails.FaultName)
 			result.Timer = time.Now()
 			needRequeue = &scrapeDuration
 		default:
