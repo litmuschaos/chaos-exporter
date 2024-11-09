@@ -47,7 +47,7 @@ func Exporter(clientSet clients.ClientSets, wq workqueue.RateLimitingInterface) 
 	// refresh metrics whenever there's a change in chaosengine or chaosresult
 	// or every informer resync duration, whichever is earlier
 	for _, done := wq.Get(); !done; _, done = wq.Get() {
-		needRequeue, err := r.GetLitmusChaosMetrics(clientSet, overallChaosResults, &monitoringEnabled)
+		needRequeue, err := r.GetLitmusChaosMetrics(clientSet, &overallChaosResults, &monitoringEnabled)
 		if err != nil {
 			log.Errorf("err: %v", err)
 		}

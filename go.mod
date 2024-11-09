@@ -1,10 +1,11 @@
 module github.com/litmuschaos/chaos-exporter
 
-go 1.22
+go 1.20
 
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24
 	github.com/aws/aws-sdk-go v1.40.27
+	github.com/golang/mock v1.5.0
 	github.com/litmuschaos/chaos-operator v0.0.0-20230629040437-de73ffdd63da
 	github.com/litmuschaos/litmus-go v0.0.0-20230605073551-d73728198577
 	github.com/onsi/ginkgo v1.16.4
@@ -13,7 +14,6 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	go.uber.org/mock v0.5.0
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v12.0.0+incompatible

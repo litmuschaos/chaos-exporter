@@ -69,6 +69,9 @@ func (gaugeMetrics *GaugeMetrics) unsetOutdatedMetrics(resultDetails ChaosResult
 			// if time passed scrape time then reset the value to 0
 			if time.Since(result.Timer) >= scrapeDuration {
 				reset = true
+			} else {
+				scrapeDuration = scrapeDuration - time.Since(result.Timer)
+				needRequeue = &scrapeDuration
 			}
 		}
 	default:

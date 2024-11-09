@@ -3,12 +3,12 @@ package controller_test
 import (
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/litmuschaos/chaos-exporter/controller"
 	"github.com/litmuschaos/chaos-exporter/controller/mocks"
 	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -73,7 +73,7 @@ func TestGetLitmusChaosMetrics(t *testing.T) {
 			tt.execFunc()
 
 			client := CreateFakeClient(t)
-			_, err := r.GetLitmusChaosMetrics(client, tt.overallChaosResult, tt.monitoring)
+			_, err := r.GetLitmusChaosMetrics(client, &tt.overallChaosResult, tt.monitoring)
 			if tt.isErr {
 				require.Error(t, err)
 				return

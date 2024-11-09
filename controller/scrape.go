@@ -35,7 +35,7 @@ import (
 var err error
 
 // GetLitmusChaosMetrics derive and send the chaos metrics
-func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults []*litmuschaosv1alpha1.ChaosResult, monitoringEnabled *MonitoringEnabled) (*time.Duration, error) {
+func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *[]*litmuschaosv1alpha1.ChaosResult, monitoringEnabled *MonitoringEnabled) (*time.Duration, error) {
 	engineCount := 0
 
 	// initialising the parameters for the namespaced scope metrics
@@ -59,9 +59,9 @@ func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, ov
 		return nil, err
 	}
 	// unset the metrics correspond to deleted chaosresults
-	m.GaugeMetrics.unsetDeletedChaosResults(overallChaosResults, resultList)
+	m.GaugeMetrics.unsetDeletedChaosResults(*overallChaosResults, resultList)
 	// updating the overall chaosresults items to latest
-	overallChaosResults = resultList
+	*overallChaosResults = resultList
 
 	var needRequeue *time.Duration
 
