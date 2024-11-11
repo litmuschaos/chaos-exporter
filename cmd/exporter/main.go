@@ -18,8 +18,11 @@ package main
 
 import (
 	"net/http"
+	"time"
 
+	"k8s.io/apimachinery/pkg/util/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -39,15 +42,21 @@ func init() {
 }
 
 func main() {
-	clients := clients.ClientSets{}
+	stop := make(chan struct{})
+	defer close(stop)
+	defer runtime.HandleCrash()
+
+	wq := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	defer wq.ShutDown()
 
 	//Getting kubeConfig and Generate ClientSets
-	if err := clients.GenerateClientSetFromKubeConfig(); err != nil {
+	clientset, err := clients.NewClientSet(stop, 5*time.Minute, wq)
+	if err != nil {
 		log.Fatalf("Unable to Get the kubeconfig, err: %v", err)
 	}
 
 	// Trigger the chaos metrics collection
-	go controller.Exporter(clients)
+	go controller.Exporter(clientset, wq)
 
 	//This section will start the HTTP server and expose metrics on the /metrics endpoint.
 	http.Handle("/metrics", promhttp.Handler())

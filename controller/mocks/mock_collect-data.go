@@ -66,10 +66,10 @@ func (mr *MockResultCollectorMockRecorder) GetResultDetails() *gomock.Call {
 }
 
 // GetResultList mocks base method.
-func (m *MockResultCollector) GetResultList(arg0 clients.ClientSets, arg1 string, arg2 *controller.MonitoringEnabled) (v1alpha1.ChaosResultList, error) {
+func (m *MockResultCollector) GetResultList(arg0 clients.ClientSets, arg1 string, arg2 *controller.MonitoringEnabled) ([]*v1alpha1.ChaosResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetResultList", arg0, arg1, arg2)
-	ret0, _ := ret[0].(v1alpha1.ChaosResultList)
+	ret0, _ := ret[0].([]*v1alpha1.ChaosResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

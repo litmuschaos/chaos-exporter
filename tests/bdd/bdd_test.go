@@ -21,14 +21,15 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
 	"os"
 	"os/exec"
 	"testing"
 	"time"
 
-	v1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	"github.com/litmuschaos/litmus-go/pkg/utils/retry"
 	"github.com/pkg/errors"
 

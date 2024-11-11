@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"math"
 	"strconv"
 	"strings"
@@ -12,7 +11,7 @@ import (
 	litmuschaosv1alpha1 "github.com/litmuschaos/chaos-operator/api/litmuschaos/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	clientTypes "k8s.io/apimachinery/pkg/types"
 )
 
@@ -20,7 +19,7 @@ import (
 
 // ResultCollector interface for the both functions GetResultList and getExperimentMetricsFromResult
 type ResultCollector interface {
-	GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error)
+	GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) ([]*v1alpha1.ChaosResult, error)
 	GetExperimentMetricsFromResult(chaosResult *litmuschaosv1alpha1.ChaosResult, clients clients.ClientSets) (bool, error)
 	SetResultDetails()
 	GetResultDetails() ChaosResultDetails
@@ -30,20 +29,20 @@ type ResultDetails struct {
 }
 
 // GetResultList return the result list correspond to the monitoring enabled chaosengine
-func (r *ResultDetails) GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) (litmuschaosv1alpha1.ChaosResultList, error) {
+func (r *ResultDetails) GetResultList(clients clients.ClientSets, chaosNamespace string, monitoringEnabled *MonitoringEnabled) ([]*v1alpha1.ChaosResult, error) {
 
-	chaosResultList, err := clients.LitmusClient.LitmuschaosV1alpha1().ChaosResults(chaosNamespace).List(context.Background(), metav1.ListOptions{})
+	chaosResultList, err := clients.ResultInformer.ChaosResults(chaosNamespace).List(labels.Everything())
 	if err != nil {
-		return litmuschaosv1alpha1.ChaosResultList{}, err
+		return nil, err
 	}
 	// waiting until any chaosresult found
-	if len(chaosResultList.Items) == 0 {
+	if len(chaosResultList) == 0 {
 		if monitoringEnabled.IsChaosResultsAvailable {
 			monitoringEnabled.IsChaosResultsAvailable = false
 			log.Warnf("No chaosresult found!")
 			log.Info("[Wait]: Waiting for the chaosresult ... ")
 		}
-		return litmuschaosv1alpha1.ChaosResultList{}, nil
+		return nil, nil
 	}
 
 	if !monitoringEnabled.IsChaosResultsAvailable {
@@ -51,7 +50,7 @@ func (r *ResultDetails) GetResultList(clients clients.ClientSets, chaosNamespace
 		monitoringEnabled.IsChaosResultsAvailable = true
 	}
 
-	return *chaosResultList, nil
+	return chaosResultList, nil
 }
 
 // GetExperimentMetricsFromResult derive all the metrics data from the chaosresult and set into resultDetails struct
@@ -61,7 +60,7 @@ func (r *ResultDetails) GetExperimentMetricsFromResult(chaosResult *litmuschaosv
 	if err != nil {
 		return false, err
 	}
-	engine, err := clients.LitmusClient.LitmuschaosV1alpha1().ChaosEngines(chaosResult.Namespace).Get(context.Background(), chaosResult.Spec.EngineName, metav1.GetOptions{})
+	engine, err := clients.EngineInformer.ChaosEngines(chaosResult.Namespace).Get(chaosResult.Spec.EngineName)
 	if err != nil {
 		// k8serrors.IsNotFound(err) checking k8s resource is found or not,
 		// It will skip this result if k8s resource is not found.
@@ -267,14 +266,14 @@ func getProbeSuccessPercentage(chaosResult *litmuschaosv1alpha1.ChaosResult) (fl
 // getEventsForSpecificInvolvedResource derive all the events correspond to the specific resource
 func getEventsForSpecificInvolvedResource(clients clients.ClientSets, resourceUID clientTypes.UID, chaosNamespace string) (corev1.EventList, error) {
 	finalEventList := corev1.EventList{}
-	eventsList, err := clients.KubeClient.CoreV1().Events(chaosNamespace).List(context.Background(), metav1.ListOptions{})
+	eventsList, err := clients.EventsInformer.Events(chaosNamespace).List(labels.Everything())
 	if err != nil {
 		return corev1.EventList{}, err
 	}
 
-	for _, event := range eventsList.Items {
-		if event.InvolvedObject.UID == resourceUID {
-			finalEventList.Items = append(finalEventList.Items, event)
+	for _, event := range eventsList {
+		if event != nil && event.InvolvedObject.UID == resourceUID {
+			finalEventList.Items = append(finalEventList.Items, *event)
 		}
 	}
 	return finalEventList, nil

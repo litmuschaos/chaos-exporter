@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
@@ -34,7 +35,7 @@ import (
 var err error
 
 // GetLitmusChaosMetrics derive and send the chaos metrics
-func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *litmuschaosv1alpha1.ChaosResultList, monitoringEnabled *MonitoringEnabled) error {
+func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, overallChaosResults *[]*litmuschaosv1alpha1.ChaosResult, monitoringEnabled *MonitoringEnabled) (*time.Duration, error) {
 	engineCount := 0
 
 	// initialising the parameters for the namespaced scope metrics
@@ -55,24 +56,26 @@ func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, ov
 	// Getting list of all the chaosresults for the monitoring
 	resultList, err := m.ResultCollector.GetResultList(clients, watchNamespace, monitoringEnabled)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// unset the metrics correspond to deleted chaosresults
-	m.GaugeMetrics.unsetDeletedChaosResults(overallChaosResults, &resultList)
+	m.GaugeMetrics.unsetDeletedChaosResults(*overallChaosResults, resultList)
 	// updating the overall chaosresults items to latest
-	overallChaosResults.Items = resultList.Items
+	*overallChaosResults = resultList
+
+	var needRequeue *time.Duration
 
 	// iterating over all chaosresults and derive all the metrics data it generates metrics per chaosresult
 	// and aggregate metrics of all results present inside chaos namespace, if chaos namespace is defined
 	// otherwise it derive metrics for all chaosresults present inside cluster
-	for _, chaosresult := range resultList.Items {
+	for _, chaosresult := range resultList {
 
 		m.ResultCollector.SetResultDetails()
 		// deriving metrics data from the chaosresult
-		skip, err := m.ResultCollector.GetExperimentMetricsFromResult(&chaosresult, clients)
+		skip, err := m.ResultCollector.GetExperimentMetricsFromResult(chaosresult, clients)
 		resultDetails := m.ResultCollector.GetResultDetails()
 		if err != nil {
-			return err
+			return nil, err
 		}
 		// generating the aggeregate metrics from per chaosresult metric
 		namespacedScopeMetrics.AwaitedExperiments += resultDetails.AwaitedExperiments
@@ -105,7 +108,10 @@ func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, ov
 		})
 
 		// setting chaosresult metrics for the given chaosresult
-		verdictValue := m.GaugeMetrics.unsetOutdatedMetrics(resultDetails)
+		verdictValue, requeue := m.GaugeMetrics.unsetOutdatedMetrics(resultDetails)
+		if requeue != nil {
+			needRequeue = requeue
+		}
 		m.GaugeMetrics.setResultChaosMetrics(resultDetails, verdictValue)
 		// setting chaosresult aws metrics for the given chaosresult, which can be used for cloudwatch
 		if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
@@ -128,7 +134,7 @@ func (m *MetricesCollecter) GetLitmusChaosMetrics(clients clients.ClientSets, ov
 	if awsConfig.Namespace != "" && awsConfig.ClusterName != "" && awsConfig.Service != "" {
 		awsConfig.setAwsNamespacedChaosMetrics(namespacedScopeMetrics)
 	}
-	return nil
+	return needRequeue, nil
 }
 
 // setNamespacedChaosMetrics sets metrics for the all chaosresults
